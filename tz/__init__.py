@@ -1,5 +1,13 @@
 """PEP 495 compliant tzinfo implementation."""
-from datetime import timedelta, tzinfo, date
+import bisect
+import itertools
+import os
+import struct
+from array import array
+from datetime import timedelta, tzinfo, date, datetime
+
+import sys
+
 from . import metadata
 
 __version__ = metadata.version
@@ -7,6 +15,8 @@ __author__ = metadata.authors[0]
 __license__ = metadata.license
 __copyright__ = metadata.copyright
 
+ZERO = timedelta(0)
+HOUR = timedelta(hours=1)
 SEC = timedelta(0, 1)
 
 def pairs(iterable):
@@ -16,7 +26,8 @@ def pairs(iterable):
 
 class ZoneInfo(tzinfo):
     zoneroot = '/usr/share/zoneinfo'
-    def __init__(self, ut, ti):
+
+    def __init__(self, ut, ti, *args, **kwargs):
         """
 
         :param ut: array
@@ -25,6 +36,7 @@ class ZoneInfo(tzinfo):
             A list of (offset, isdst, abbr) tuples
         :return: None
         """
+        super(ZoneInfo, self).__init__(*args, **kwargs)
         self.ut = ut
         self.ti = ti
         self.lt = self.invert(ut, ti)
@@ -34,10 +46,10 @@ class ZoneInfo(tzinfo):
         lt = (ut.__copy__(), ut.__copy__())
         if ut:
             offset = ti[0][0] // SEC
-            lt[0][0] = max(-2**31, lt[0][0] + offset)
-            lt[1][0] = max(-2**31, lt[1][0] + offset)
+            lt[0][0] = max(-2 ** 31, lt[0][0] + offset)
+            lt[1][0] = max(-2 ** 31, lt[1][0] + offset)
             for i in range(1, len(ut)):
-                lt[0][i] += ti[i-1][0] // SEC
+                lt[0][i] += ti[i - 1][0] // SEC
                 lt[1][i] += ti[i][0] // SEC
         return lt
 
@@ -94,22 +106,20 @@ class ZoneInfo(tzinfo):
         if dt.tzinfo is not self:
             raise ValueError("dt.tzinfo is not self")
 
-        timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400
-                     + dt.hour * 3600
-                     + dt.minute * 60
-                     + dt.second)
+        timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400 +
+                     dt.hour * 3600 + dt.minute * 60 + dt.second)
 
         if timestamp < self.ut[1]:
             tti = self.ti[0]
             fold = 0
         else:
             idx = bisect.bisect_right(self.ut, timestamp)
-            assert self.ut[idx-1] <= timestamp
+            assert self.ut[idx - 1] <= timestamp
             assert idx == len(self.ut) or timestamp < self.ut[idx]
-            tti_prev, tti = self.ti[idx-2:idx]
+            tti_prev, tti = self.ti[idx - 2:idx]
             # Detect fold
             shift = tti_prev[0] - tti[0]
-            fold = (shift > timedelta(0, timestamp - self.ut[idx-1]))
+            fold = (shift > timedelta(0, timestamp - self.ut[idx - 1]))
         dt += tti[0]
         if fold:
             return dt.replace(fold=1)
@@ -117,10 +127,8 @@ class ZoneInfo(tzinfo):
             return dt
 
     def _find_ti(self, dt, i):
-        timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400
-             + dt.hour * 3600
-             + dt.minute * 60
-             + dt.second)
+        timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400 +
+                     dt.hour * 3600 + dt.minute * 60 + dt.second)
         lt = self.lt[dt.fold]
         idx = bisect.bisect_right(lt, timestamp)
 
@@ -148,7 +156,7 @@ class ZoneInfo(tzinfo):
             for f in files:
                 p = os.path.join(root, f)
                 with open(p, 'rb') as o:
-                    magic =  o.read(4)
+                    magic = o.read(4)
                 if magic == b'TZif':
                     yield p[len(zonedir) + 1:]
 
@@ -161,7 +169,7 @@ class ZoneInfo(tzinfo):
         min_gap_zone = max_gap_zone = None
         min_fold_datetime = max_fold_datetime = datetime.min
         min_fold_zone = max_fold_zone = None
-        stats_since = datetime(start_year, 1, 1) # Starting from 1970 eliminates a lot of noise
+        stats_since = datetime(start_year, 1, 1)  # Starting from 1970 eliminates a lot of noise
         for zonename in cls.zonenames():
             count += 1
             tz = cls.fromname(zonename)
@@ -199,7 +207,6 @@ class ZoneInfo(tzinfo):
         print("Max gap:         %16s at %s in %s" % (max_gap, max_gap_datetime, max_gap_zone))
         print("Min fold:        %16s at %s in %s" % (min_fold, min_fold_datetime, min_fold_zone))
         print("Max fold:        %16s at %s in %s" % (max_fold, max_fold_datetime, max_fold_zone))
-
 
     def transitions(self):
         for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
