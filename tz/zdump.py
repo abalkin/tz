@@ -1,9 +1,9 @@
-import sys
 import os
 import struct
+import sys
 from array import array
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
 
 ttinfo = namedtuple('ttinfo', ['tt_gmtoff', 'tt_isdst', 'tt_abbrind'])
 
@@ -62,11 +62,10 @@ class TZInfo:
             for f in files:
                 p = os.path.join(root, f)
                 with open(p, 'rb') as o:
-                    magic =  o.read(4)
+                    magic = o.read(4)
                 if magic == b'TZif':
                     zones.append(p[len(zonedir) + 1:])
         return zones
-
 
 def main(argv):
     if len(argv) < 2:
@@ -81,11 +80,9 @@ def main(argv):
         tzi = TZInfo.fromfile(fileobj)
     tzi.dump(sys.stdout)
 
-
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""
     raise SystemExit(main(sys.argv))
-
 
 if __name__ == '__main__':
     entry_point()
