@@ -246,7 +246,8 @@ setup_dict = dict(
     zip_safe=False,  # don't use eggs
     entry_points={
         'console_scripts': [
-            'tz_cli = tz.main:entry_point'
+            'tz_cli = tz.main:entry_point',
+            'zdump = tz.zdump:entry_point'
         ],
         # if you have a gui, use this
         # 'gui_scripts': [

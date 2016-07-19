@@ -67,15 +67,25 @@ class TZInfo:
                     zones.append(p[len(zonedir) + 1:])
         return zones
 
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
+
+def main(argv):
+    if len(argv) < 2:
         zones = TZInfo.zonelist()
         for z in zones:
             print(z)
         sys.exit()
-    filepath = sys.argv[1]
+    filepath = argv[1]
     if not filepath.startswith('/'):
         filepath = os.path.join('/usr/share/zoneinfo', filepath)
     with open(filepath, 'rb') as fileobj:
         tzi = TZInfo.fromfile(fileobj)
     tzi.dump(sys.stdout)
+
+
+def entry_point():
+    """Zero-argument entry point for use with setuptools/distribute."""
+    raise SystemExit(main(sys.argv))
+
+
+if __name__ == '__main__':
+    entry_point()
