@@ -1,21 +1,14 @@
 # -*- coding: utf-8 -*-
-from pytest import raises
-
-# The parametrize function is generated, so this doesn't work:
-#
-#     from pytest.mark import parametrize
-#
 import pytest
-parametrize = pytest.mark.parametrize
 
 from tz import metadata
 from tz.main import main
 
 
 class TestMain(object):
-    @parametrize('helparg', ['-h', '--help'])
+    @pytest.mark.parametrize('helparg', ['-h', '--help'])
     def test_help(self, helparg, capsys):
-        with raises(SystemExit) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             main(['progname', helparg])
         out, err = capsys.readouterr()
         # Should have printed some sort of usage message. We don't
@@ -27,9 +20,9 @@ class TestMain(object):
         # Should exit with zero return code.
         assert exc_info.value.code == 0
 
-    @parametrize('versionarg', ['-V', '--version'])
+    @pytest.mark.parametrize('versionarg', ['-V', '--version'])
     def test_version(self, versionarg, capsys):
-        with raises(SystemExit) as exc_info:
+        with pytest.raises(SystemExit) as exc_info:
             main(['progname', versionarg])
         out, err = capsys.readouterr()
         # Should print out version.
