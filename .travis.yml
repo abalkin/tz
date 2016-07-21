@@ -5,6 +5,8 @@ language: python
 python:
   - 3.4
   - 3.5
+  - 3.5-dev
+  - nightly
 
 before_install:
   - uname -a
