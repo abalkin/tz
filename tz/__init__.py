@@ -3,10 +3,9 @@ import bisect
 import itertools
 import os
 import struct
+import sys
 from array import array
 from datetime import timedelta, tzinfo, date, datetime
-
-import sys
 
 from . import metadata
 
@@ -19,10 +18,12 @@ ZERO = timedelta(0)
 HOUR = timedelta(hours=1)
 SEC = timedelta(0, 1)
 
+
 def pairs(iterable):
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
+
 
 if hasattr(datetime, 'fold'):
     def enfold(dt, fold=1):
@@ -42,6 +43,7 @@ else:
             return _DatetimeWithFold(*args)
         else:
             return datetime(*args)
+
 
 class ZoneInfo(tzinfo):
     zoneroot = '/usr/share/zoneinfo'
@@ -188,7 +190,8 @@ class ZoneInfo(tzinfo):
         min_gap_zone = max_gap_zone = None
         min_fold_datetime = max_fold_datetime = datetime.min
         min_fold_zone = max_fold_zone = None
-        stats_since = datetime(start_year, 1, 1)  # Starting from 1970 eliminates a lot of noise
+        # Starting from 1970 eliminates a lot of noise
+        stats_since = datetime(start_year, 1, 1)
         for zonename in cls.zonenames():
             count += 1
             tz = cls.fromname(zonename)
@@ -201,7 +204,8 @@ class ZoneInfo(tzinfo):
                         max_gap = shift
                         max_gap_zone = zonename
                         max_gap_datetime = dt
-                    if (shift, datetime.max - dt) < (min_gap, datetime.max - min_gap_datetime):
+                    if (shift, datetime.max - dt) < (min_gap, datetime.max -
+                                                     min_gap_datetime):
                         min_gap = shift
                         min_gap_zone = zonename
                         min_gap_datetime = dt
@@ -212,7 +216,8 @@ class ZoneInfo(tzinfo):
                         max_fold = shift
                         max_fold_zone = zonename
                         max_fold_datetime = dt
-                    if (shift, datetime.max - dt) < (min_fold, datetime.max - min_fold_datetime):
+                    if (shift, datetime.max - dt) < (min_fold, datetime.max -
+                                                     min_fold_datetime):
                         min_fold = shift
                         min_fold_zone = zonename
                         min_fold_datetime = dt
@@ -220,12 +225,17 @@ class ZoneInfo(tzinfo):
                     zeros_count += 1
         trans_counts = (gap_count, fold_count, zeros_count)
         print("Number of zones:       %5d" % count)
-        print("Number of transitions: %5d = %d (gaps) + %d (folds) + %d (zeros)" %
+        print("Number of transitions: %5d ="
+              " %d (gaps) + %d (folds) + %d (zeros)" %
               ((sum(trans_counts),) + trans_counts))
-        print("Min gap:         %16s at %s in %s" % (min_gap, min_gap_datetime, min_gap_zone))
-        print("Max gap:         %16s at %s in %s" % (max_gap, max_gap_datetime, max_gap_zone))
-        print("Min fold:        %16s at %s in %s" % (min_fold, min_fold_datetime, min_fold_zone))
-        print("Max fold:        %16s at %s in %s" % (max_fold, max_fold_datetime, max_fold_zone))
+        print("Min gap:         %16s at %s in %s" %
+              (min_gap, min_gap_datetime, min_gap_zone))
+        print("Max gap:         %16s at %s in %s" %
+              (max_gap, max_gap_datetime, max_gap_zone))
+        print("Min fold:        %16s at %s in %s" %
+              (min_fold, min_fold_datetime, min_fold_zone))
+        print("Max fold:        %16s at %s in %s" %
+              (max_fold, max_fold_datetime, max_fold_zone))
 
     def transitions(self):
         for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
@@ -233,7 +243,8 @@ class ZoneInfo(tzinfo):
             yield datetime.utcfromtimestamp(t), shift
 
     def nondst_folds(self):
-        """Find all folds with the same value of isdst on both sides of the transition."""
+        """Find all folds with the same value of isdst
+           on both sides of the transition."""
         for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
             shift = ti[0] - prev_ti[0]
             if shift < ZERO and ti[1] == prev_ti[1]:

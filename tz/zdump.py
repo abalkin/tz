@@ -7,6 +7,7 @@ from datetime import datetime
 
 ttinfo = namedtuple('ttinfo', ['tt_gmtoff', 'tt_isdst', 'tt_abbrind'])
 
+
 class TZInfo:
     def __init__(self, transitions, type_indices, ttis, abbrs):
         self.transitions = transitions
@@ -21,7 +22,8 @@ class TZInfo:
         fileobj.seek(20)
         header = fileobj.read(24)
         tzh = (tzh_ttisgmtcnt, tzh_ttisstdcnt, tzh_leapcnt,
-               tzh_timecnt, tzh_typecnt, tzh_charcnt) = struct.unpack(">6l", header)
+               tzh_timecnt, tzh_typecnt, tzh_charcnt) = struct.unpack(">6l",
+                                                                      header)
         transitions = array('i')
         transitions.fromfile(fileobj, tzh_timecnt)
         if sys.byteorder != 'big':
@@ -42,7 +44,8 @@ class TZInfo:
         return self
 
     def dump(self, stream, start=None, end=None):
-        for j, (trans, i) in enumerate(zip(self.transitions, self.type_indices)):
+        for j, (trans, i) in enumerate(zip(self.transitions,
+                                           self.type_indices)):
             utc = datetime.utcfromtimestamp(trans)
             tti = self.ttis[i]
             lmt = datetime.utcfromtimestamp(trans + tti.tt_gmtoff)
@@ -53,7 +56,8 @@ class TZInfo:
                 shift = " %+g" % ((tti.tt_gmtoff - prev_tti.tt_gmtoff) / 3600)
             else:
                 shift = ''
-            print("%s UTC = %s %-5s isdst=%d" % (utc, lmt, abbr, tti[1]) + shift, file=stream)
+            print("%s UTC = %s %-5s isdst=%d" %
+                  (utc, lmt, abbr, tti[1]) + shift, file=stream)
 
     @classmethod
     def zonelist(cls, zonedir='/usr/share/zoneinfo'):
@@ -66,6 +70,7 @@ class TZInfo:
                 if magic == b'TZif':
                     zones.append(p[len(zonedir) + 1:])
         return zones
+
 
 def main(argv):
     if len(argv) < 2:
@@ -80,9 +85,11 @@ def main(argv):
         tzi = TZInfo.fromfile(fileobj)
     tzi.dump(sys.stdout)
 
+
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""
     raise SystemExit(main(sys.argv))
+
 
 if __name__ == '__main__':
     entry_point()
