@@ -30,6 +30,8 @@ if hasattr(datetime, 'fold'):
         return dt.replace(fold=fold)
 else:
     class _DatetimeWithFold(datetime):
+        __slots__ = ()
+
         @property
         def fold(self):
             return 1
