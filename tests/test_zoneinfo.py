@@ -5,6 +5,7 @@ from datetime import timedelta, timezone
 
 from tz import ZoneInfo, enfold
 
+
 class ZoneInfoTest(unittest.TestCase):
     zonename = 'America/New_York'
 
@@ -14,8 +15,10 @@ class ZoneInfoTest(unittest.TestCase):
         self.tz = ZoneInfo.fromname(self.zonename)
 
     def assertEquivDatetimes(self, a, b):
-        self.assertEqual((a.replace(tzinfo=None), getattr(a, 'fold', 0), id(a.tzinfo)),
-                         (b.replace(tzinfo=None), getattr(b, 'fold', 0), id(b.tzinfo)))
+        self.assertEqual((a.replace(tzinfo=None), getattr(a, 'fold', 0),
+                          id(a.tzinfo)),
+                         (b.replace(tzinfo=None), getattr(b, 'fold', 0),
+                          id(b.tzinfo)))
 
     def test_folds(self):
         tz = self.tz
@@ -49,7 +52,8 @@ class ZoneInfoTest(unittest.TestCase):
                 adt = udt.replace(tzinfo=timezone.utc).astimezone(tz)
                 self.assertEquivDatetimes(adt, ldt)
                 utcoffset = ldt.utcoffset()
-                self.assertEqual(ldt.replace(tzinfo=None), udt.replace(tzinfo=None) + utcoffset)
+                self.assertEqual(ldt.replace(tzinfo=None),
+                                 udt.replace(tzinfo=None) + utcoffset)
                 # Create a local time inside the gap
                 ldt = tz.fromutc(dt.replace(tzinfo=tz)) - shift + x
                 self.assertLess(enfold(ldt, 1).utcoffset(),
