@@ -15,8 +15,7 @@ before_install:
   - virtualenv --python=python venv
   - source venv/bin/activate
   - python -V
-  - pip install --upgrade pip setuptools
-  - pip install --upgrade tox
+  - pip install -r requirements-dev.txt
 
 script:
-  - tox
+  - py.test
