@@ -24,6 +24,25 @@ def pairs(iterable):
     next(b, None)
     return zip(a, b)
 
+if hasattr(datetime, 'fold'):
+    def enfold(dt, fold=1):
+        return dt.replace(fold=fold)
+else:
+    class _DatetimeWithFold(datetime):
+        @property
+        def fold(self):
+            return 1
+
+    def enfold(dt, fold=1):
+        if getattr(dt, 'fold', 0) == fold:
+            return dt
+        args = dt.timetuple()[:6]
+        args += (dt.microsecond, dt.tzinfo)
+        if fold:
+            return _DatetimeWithFold(*args)
+        else:
+            return datetime(*args)
+
 class ZoneInfo(tzinfo):
     zoneroot = '/usr/share/zoneinfo'
 
@@ -122,14 +141,14 @@ class ZoneInfo(tzinfo):
             fold = (shift > timedelta(0, timestamp - self.ut[idx - 1]))
         dt += tti[0]
         if fold:
-            return dt.replace(fold=1)
+            return enfold(dt)
         else:
             return dt
 
     def _find_ti(self, dt, i):
         timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400 +
                      dt.hour * 3600 + dt.minute * 60 + dt.second)
-        lt = self.lt[dt.fold]
+        lt = self.lt[getattr(dt, 'fold', 0)]
         idx = bisect.bisect_right(lt, timestamp)
 
         return self.ti[max(0, idx - 1)][i]
