@@ -1,5 +1,5 @@
-TZ
-==
+tz - - PEP 495 compliant tzinfo
+===============================
 
 Contents:
 
