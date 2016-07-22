@@ -18,9 +18,12 @@ before_install:
   - source venv/bin/activate
   - python -V
   - pip install -r requirements-dev.txt
+  - pip install codecov
+  - pip install pytest-cov
 
 script:
   - paver test_all
+  - paver coverage
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
