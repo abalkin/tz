@@ -10,7 +10,7 @@ tz - PEP 495 compliant tzinfo
 
 Documentation
 =============
- * `Latest <https://abalkin.github.io/tz>`_
+* `Latest <https://abalkin.github.io/tz>`_
 
 Authors
 =======
