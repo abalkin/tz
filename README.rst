@@ -7,6 +7,11 @@ tz - PEP 495 compliant tzinfo
     :target: https://codecov.io/gh/abalkin/tz
 .. image:: https://badge.fury.io/py/tz.svg
     :target: https://badge.fury.io/py/tz
+
+Documentation
+=============
+ * [Latest](https://abalkin.github.io/tz/)
+
 Authors
 =======
 
