@@ -17,6 +17,7 @@ before_install:
   - virtualenv --python=python venv
   - source venv/bin/activate
   - python -V
+  - python -c "import datetime;print('fold' in dir(datetime.datetime))"
   - pip install -r requirements-dev.txt
   - pip install codecov
   - pip install pytest-cov
