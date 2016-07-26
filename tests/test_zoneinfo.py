@@ -1,18 +1,29 @@
 import unittest
 import sys
 
-from datetime import timedelta, timezone
+from datetime import timedelta, timezone, datetime
+
+import pytest
 
 from tz import ZoneInfo, enfold
 
 
+def test_enfold():
+    d0 = datetime(1, 1, 1)
+    d1 = enfold(d0, fold=1)
+    assert d1.fold == 1
+    d2 = enfold(d1, fold=0)
+    assert getattr(d2, 'fold', 0) == 0
+
+
 class ZoneInfoTest(unittest.TestCase):
     zonename = 'America/New_York'
+    version = None
 
     def setUp(self):
         if sys.platform == "win32":
             self.skipTest("Skipping zoneinfo tests on Windows")
-        self.tz = ZoneInfo.fromname(self.zonename)
+        self.tz = ZoneInfo.fromname(self.zonename, self.version)
 
     def assertEquivDatetimes(self, a, b):
         self.assertEqual((a.replace(tzinfo=None), getattr(a, 'fold', 0),
@@ -64,3 +75,14 @@ class ZoneInfoTest(unittest.TestCase):
                 udt = dt + x
                 ldt = tz.fromutc(udt.replace(tzinfo=tz))
                 self.assertEqual(getattr(ldt, 'fold', 0), 0)
+
+
+class ZoneInfoV0Test(ZoneInfoTest):
+    version = 0
+
+
+def test_invalid_zoneinfo(tmpdir):
+    empty = tmpdir.ensure('empty')
+    with pytest.raises(ValueError):
+        with empty.open() as f:
+            ZoneInfo.fromfile(f)

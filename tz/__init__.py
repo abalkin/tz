@@ -153,10 +153,10 @@ class ZoneInfo(tzinfo):
         return self
 
     @classmethod
-    def fromname(cls, name):
+    def fromname(cls, name, version=None):
         path = os.path.join(cls.zoneroot, name)
         with open(path, 'rb') as f:
-            return cls.fromfile(f)
+            return cls.fromfile(f, version)
 
     EPOCHORDINAL = date(1970, 1, 1).toordinal()
 
