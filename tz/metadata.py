@@ -8,7 +8,7 @@ Information describing the project.
 package = 'tz'
 project = "TZ"
 project_no_spaces = project.replace(' ', '')
-version = '0.2'
+version = '0.2.1'
 description = 'PEP 495 compliant tzinfo implementation.'
 authors = ['Alexander Belopolsky', ]
 authors_string = ', '.join(authors)
