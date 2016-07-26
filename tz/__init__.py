@@ -107,7 +107,6 @@ class ZoneInfo(tzinfo):
 
         (ttisgmtcnt, ttisstdcnt, leapcnt,
          timecnt, typecnt, charcnt) = cls._read_counts(fileobj)
-        import pdb; pdb.set_trace()
         if version >= 2:
             # Skip to the counts in the second header.
             data_size = (5 * timecnt +
