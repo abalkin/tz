@@ -76,6 +76,26 @@ class ZoneInfoTest(unittest.TestCase):
                 ldt = tz.fromutc(udt.replace(tzinfo=tz))
                 self.assertEqual(getattr(ldt, 'fold', 0), 0)
 
+    def test_zeros(self):
+        tz = self.tz
+        transitions = list(tz.transitions())
+        folds = list(tz.folds())
+        gaps = list(tz.gaps())
+        zeros = list(self.tz.zeros())
+        self.assertEqual(len(transitions), len(folds) + len(gaps) + len(zeros))
+
+    def test_zonenames(self):
+        names = list(self.tz.zonenames())
+        self.assertGreater(len(names), 0)
+
+    def test_fromutc_errors(self):
+        tz = self.tz
+        with self.assertRaises(TypeError):
+            tz.fromutc(None)
+        with self.assertRaises(ValueError):
+            dt = datetime(1, 1, 1)
+            tz.fromutc(dt)
+
 
 class ZoneInfoV0Test(ZoneInfoTest):
     version = 0
@@ -86,3 +106,17 @@ def test_invalid_zoneinfo(tmpdir):
     with pytest.raises(ValueError):
         with empty.open() as f:
             ZoneInfo.fromfile(f)
+
+
+def test_zoneinfo_stats(capsys):
+    ZoneInfo.stats()
+    out, err = capsys.readouterr()
+    assert out
+    assert not err
+
+
+def test_zoneinfo_nondst_folds(capsys):
+    ZoneInfo.print_all_nondst_folds()
+    out, err = capsys.readouterr()
+    assert out
+    assert not err
