@@ -63,6 +63,7 @@ class ZoneInfo(tzinfo):
         self.ut = ut
         self.ti = ti
         self.lt = self.invert(ut, ti)
+        self.version = 0
 
     @staticmethod
     def invert(ut, ti):
@@ -77,28 +78,66 @@ class ZoneInfo(tzinfo):
         return lt
 
     @classmethod
-    def fromfile(cls, fileobj):
-        if fileobj.read(4).decode() != "TZif":
-            raise ValueError("not a zoneinfo file")
-        fileobj.seek(32)
+    def _read_counts(cls, fileobj):
         counts = array('i')
-        counts.fromfile(fileobj, 3)
+        counts.fromfile(fileobj, 6)
         if sys.byteorder != 'big':
             counts.byteswap()
+        return counts
 
-        ut = array('i')
-        ut.fromfile(fileobj, counts[0])
+    @classmethod
+    def fromfile(cls, fileobj, version=None):
+        magic = fileobj.read(5)
+        if magic[:4] != b"TZif":
+            raise ValueError("not a zoneinfo file")
+        if version is None:
+            version = int(magic[4:]) if magic[4] else 0
+        fileobj.seek(20)
+        # Read the counts:
+        # [0] - The number of UT/local indicators stored in the file.
+        # [1] - The number of standard/wall indicators stored in the file.
+        # [2] - The number of leap seconds for which data entries are stored
+        #       in the file.
+        # [3] - The number of transition times for which data entries are
+        #       stored in the file.
+        # [4] - The number of local time types for which data entries are
+        #       stored in the file (must not be zero).
+        # [5] - The number of characters of time zone abbreviation strings
+        #  stored in the file.
+
+        (ttisgmtcnt, ttisstdcnt, leapcnt,
+         timecnt, typecnt, charcnt) = cls._read_counts(fileobj)
+        import pdb; pdb.set_trace()
+        if version >= 2:
+            # Skip to the counts in the second header.
+            data_size = (5 * timecnt +
+                         6 * typecnt +
+                         charcnt +
+                         8 * leapcnt +
+                         ttisstdcnt +
+                         ttisgmtcnt)
+            fileobj.seek(data_size + 20, os.SEEK_CUR)
+            # Re-read the counts.
+            (ttisgmtcnt, ttisstdcnt, leapcnt,
+             timecnt, typecnt, charcnt) = cls._read_counts(fileobj)
+            ttfmt = 'q'
+        else:
+            ttfmt = 'i'
+
+        ut = array(ttfmt)
+        ut.fromfile(fileobj, timecnt)
         if sys.byteorder != 'big':
             ut.byteswap()
 
         type_indices = array('B')
-        type_indices.fromfile(fileobj, counts[0])
+        type_indices.fromfile(fileobj, timecnt)
 
+        # Read local time types.
         ttis = []
-        for i in range(counts[1]):
-            ttis.append(struct.unpack(">lbb", fileobj.read(6)))
+        for i in range(typecnt):
+            ttis.append(struct.unpack(">iBB", fileobj.read(6)))
 
-        abbrs = fileobj.read(counts[2])
+        abbrs = fileobj.read(charcnt)
 
         # Convert ttis
         for i, (gmtoff, isdst, abbrind) in enumerate(ttis):
@@ -110,6 +149,7 @@ class ZoneInfo(tzinfo):
             ti[i] = ttis[idx]
 
         self = cls(ut, ti)
+        self.version = version
 
         return self
 
@@ -242,7 +282,7 @@ class ZoneInfo(tzinfo):
     def transitions(self):
         for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
             shift = ti[0] - prev_ti[0]
-            yield datetime.utcfromtimestamp(t), shift
+            yield datetime.utcfromtimestamp(max(t, -62135596800)), shift
 
     def nondst_folds(self):
         """Find all folds with the same value of isdst
