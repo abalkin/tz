@@ -265,3 +265,4 @@ intersphinx_mapping = {
 # <http://sphinx-doc.org/ext/autodoc.html#confval-autoclass_content> for more
 # information.
 autoclass_content = 'both'
+suppress_warnings = ['image.nonlocal_uri']
