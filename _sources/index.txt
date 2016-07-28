@@ -1,5 +1,4 @@
-tz - - PEP 495 compliant tzinfo
-===============================
+.. include:: ../../README.rst
 
 Contents:
 
