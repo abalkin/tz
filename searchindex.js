@@ -1,1 +1,1 @@
-Search.setIndex({envversion:50,filenames:["index"],objects:{},objnames:{},objtypes:{},terms:{content:0,index:0,modul:0,page:0,search:0},titles:["tz - - PEP 495 compliant tzinfo"],titleterms:{compliant:0,indice:0,pep:0,tabl:0,tzinfo:0}})
+Search.setIndex({envversion:42,terms:{index:0,search:0,art:0,modul:0,rubi:1,page:0,content:0,prior:0,pytz:1,datetutil:1},objtypes:{},objnames:{},filenames:["index","prior"],titles:["tz - - PEP 495 compliant tzinfo","Prior Art"],objects:{},titleterms:{art:1,pep:0,indic:0,prior:1,compliant:0,tabl:0,tzinfo:0}})
