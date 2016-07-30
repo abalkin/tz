@@ -73,11 +73,34 @@ def compile_stream(input, output, header=HEADER):
     print_rules(rules, file=output)
     print_zones(zones, file=output)
 
+RULE_TEMPLATE = 'Rule({}, {}, {}, {}, {}, {!r}, {!r}, {!r})'
+
+
+def format_rule(begin, end, type, in_month, on, at, save, letters):
+    begin = int(begin)
+    if end == 'only':
+        end = begin + 1
+    elif end == 'max':
+        end == 1000
+    else:
+        end = int(end) + 1
+    if type == '-':
+        type = None
+    if letters == '-':
+        letters = ''
+
+    return RULE_TEMPLATE.format(begin, end, type, in_month,
+                                on, at, save, letters)
+
 
 def print_rules(rules, file):
-    for name, rules in rules.items():
-        file.write('class %s(Rules):\n    pass\n' % name)
-
+    prefix = ' ' * 8
+    for name, lines in rules.items():
+        file.write('class %s(Rules):\n'
+                   '    rules = [\n' % name)
+        for args in lines:
+            file.write(prefix + format_rule(*args) + ',\n')
+        file.write('    ]\n\n')
 
 TIME_UNITS = 'hours', 'minutes', 'seconds'
 
