@@ -1,5 +1,7 @@
 from collections import namedtuple
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
+
+UTC = timezone.utc
 
 
 class DayOfWeek(int):

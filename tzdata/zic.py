@@ -97,7 +97,8 @@ def print_rules(rules, file):
     prefix = ' ' * 8
     for name, lines in rules.items():
         file.write('class %s(Rules):\n'
-                   '    rules = [\n' % name)
+                   '    name ="%s"\n'
+                   '    rules = [\n' % (rules_name(name), name))
         for args in lines:
             file.write(prefix + format_rule(*args) + ',\n')
         file.write('    ]\n\n')
@@ -106,21 +107,12 @@ TIME_UNITS = 'hours', 'minutes', 'seconds'
 
 
 def format_until(until):
-    until = [(u.lstrip('0') or '0') for u in until]
     n = len(until)
     if n == 0:
         return None
     if n == 1:
         return int(until[0])
-    if n == 2:
-        return '(%s, %s)' % tuple(until)
-    if n == 3:
-        return 'date(%s)' % ', '.join(until)
-    if n == 4:
-        return 'datetime(%s, %s)' % (
-            ', '.join(until[:3]),
-            ', '.join((u.lstrip('0') or '0') for u in until[3].split(':')))
-    raise ValueError('Unexpected until=%s' % until)
+    return '(%s)' % ', '.join(repr(u) for u in until)
 
 
 def format_delta(delta):
@@ -138,6 +130,8 @@ def format_observance(gmtoff, rules, format, until):
         rules = None
     elif ':' in rules:
         rules = "'%s'" % rules
+    else:
+        rules = rules_name(rules)
     return OBSERVANCE_TEMPLATE.format(format_delta(gmtoff),
                                       rules, format, until)
 
@@ -151,12 +145,18 @@ def print_zones(zones, file, indent=0):
             print_zones(info, file, indent + 4)
         else:
             prefix = indent * ' '
-            file.write(prefix + 'class %s(Zone):\n' % name)
+            file.write(prefix + 'class %s(Zone):\n' % zone_name(name))
+            file.write(prefix + '    name = %r\n' % name)
             file.write(prefix + '    observances = [\n')
             for observance in observances:
                 file.write(textwrap.indent(observance, prefix + 8 * ' '))
             file.write(prefix + '%s]\n' % (4 * ' '))
 
+
+def rules_name(name):
+    return name.replace('-', '_')
+
+zone_name = rules_name
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

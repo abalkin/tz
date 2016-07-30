@@ -1,7 +1,8 @@
 import io
-from tzdata.zic import strip_comments, lines, compile_stream
+from tzdata.zic import strip_comments, lines, compile_stream, compile
+from tzdata import raw_file
 import pytest
-
+import os
 
 @pytest.mark.parametrize('line,stripped', [
     ('no comments',
@@ -26,11 +27,12 @@ Zone America/New_York   -4:56:02 -      LMT     1883 Nov 18 12:03:58
 ny_python = """\
 class America:
     class New_York(Zone):
+        name = 'New_York'
         observances = [
             Observance(gmtoff=-timedelta(hours=4, minutes=56, seconds=2),
                        rules=None,
                        format='LMT',
-                       until=datetime(1883, Nov, 18, 12, 3, 58)),
+                       until=('1883', 'Nov', '18', '12:03:58')),
             Observance(gmtoff=-timedelta(hours=5, minutes=0),
                        rules=US,
                        format='E%sT',
@@ -70,3 +72,17 @@ def test_zic():
 
 def test_print_zones():
     pass
+
+
+@pytest.mark.parametrize('file', [
+    "africa", "antarctica", "asia", "australasia",
+    "europe", "northamerica", "southamerica",
+])
+def test_generated(monkeypatch, tmpdir, file):
+    monkeypatch.chdir(tmpdir)
+    compile(raw_file(file), file + '.py')
+    assert os.path.exists(file + '.py')
+    namespace = {}
+    with open(file + '.py') as f:
+        exec(f.read(), namespace)
+    assert 'Zone' in namespace
