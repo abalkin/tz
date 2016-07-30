@@ -4,6 +4,7 @@ from tzdata import raw_file
 import pytest
 import os
 
+
 @pytest.mark.parametrize('line,stripped', [
     ('no comments',
      'no comments',),
