@@ -148,47 +148,11 @@ Abbreviations, if used, must be unambiguous in context.
 
 A rule line has the form
 
-Rule
-
-NAME
-
-FROM
-
-TO
-
-TYPE
-
-IN
-
-ON
-
-AT
-
-SAVE
-
-LETTER/S
+Rule NAME FROM TO TYPE IN ON AT SAVE LETTER/S
 
 For example:
 
-Rule
-
-US
-
-1967
-
-1973
-
-``-``
-
-Apr
-
-lastSun
-
-2:00
-
-1:00
-
-D
+Rule US 1967 1973 ``-`` Apr lastSun 2:00 1:00 D
 
 The fields that make up a rule line are:
 

@@ -2,6 +2,8 @@ import textwrap
 
 import sys
 
+from datetime import datetime
+
 HEADER = """\
 from tzdata.classes import *
 from datetime import *
@@ -73,7 +75,9 @@ def compile_stream(input, output, header=HEADER):
     print_rules(rules, file=output)
     print_zones(zones, file=output)
 
-RULE_TEMPLATE = 'Rule({}, {}, {}, {}, {}, {!r}, {!r}, {!r})'
+RULE_TEMPLATE = ('Rule({}, {}, {}, {}, {},\n'
+                 '     at={},\n'
+                 '     save={}, letters={!r})')
 
 
 def format_rule(begin, end, type, in_month, on, at, save, letters):
@@ -81,16 +85,49 @@ def format_rule(begin, end, type, in_month, on, at, save, letters):
     if end == 'only':
         end = begin + 1
     elif end == 'max':
-        end == 1000
+        end = 10000
     else:
         end = int(end) + 1
     if type == '-':
         type = None
     if letters == '-':
         letters = ''
-
+    at = format_at(at)
+    save = format_time(save)
     return RULE_TEMPLATE.format(begin, end, type, in_month,
                                 on, at, save, letters)
+
+TIME_FORMATS = ['%H', '%H:%M', "%H:%M:%S"]
+TIME_TYPES = {
+    'w': 'wall',
+    'u': 'utc',
+    'g': 'utc',
+    'z': 'utc',
+    's': 'std',
+}
+
+
+def format_time(t):
+    if t == '-':
+        return 'timedelta(0)'
+    if t.startswith('24'):
+        return 'timedelta(1)'
+    n = t.count(':')
+    fmt = TIME_FORMATS[n]
+    t = datetime.strptime(t, fmt).time()
+    args = ['hours={0.hour}', 'minutes={0.minute}', 'seconds={0.second)']
+    template = 'timedelta(%s)' % ', '.join(args[:n+1])
+    return template.format(t)
+
+
+def format_at(at):
+    try:
+        time_type = TIME_TYPES[at[-1]]
+    except KeyError:
+        time_type = 'wall'
+    else:
+        at = at[:-1]
+    return '(%s, %r)' % (format_time(at), time_type)
 
 
 def print_rules(rules, file):
@@ -100,7 +137,8 @@ def print_rules(rules, file):
                    '    name ="%s"\n'
                    '    rules = [\n' % (rules_name(name), name))
         for args in lines:
-            file.write(prefix + format_rule(*args) + ',\n')
+            rule = format_rule(*args)
+            file.write(textwrap.indent(rule, prefix) + ',\n')
         file.write('    ]\n\n')
 
 TIME_UNITS = 'hours', 'minutes', 'seconds'

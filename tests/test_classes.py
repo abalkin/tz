@@ -3,8 +3,8 @@ from tzdata.classes import (
     Mon,
     Jul,
     last, next_month,
-)
-from datetime import date
+    Rule, Mar, Sun, Nov, FixedOffset)
+from datetime import date, timedelta, datetime
 
 
 @pytest.mark.parametrize('f,year,month,day', [
@@ -33,3 +33,26 @@ def test_last(dow, year, month, day):
     f = last(dow)
     d = date(year, month, day)
     assert d == f(year, month)
+
+
+def test_us_dst_rule():
+    rule = Rule(2007, 10000, None, Mar, Sun >= 8,
+                at=(timedelta(hours=2, minutes=0), 'wall'),
+                save=timedelta(hours=1, minutes=0), letters='D')
+    assert rule.abbr('E%sT') == 'EDT'
+    assert rule.abbr('EST/EDT') == 'EDT'
+    assert rule.abbr('PDT') == 'PDT'
+
+    prev_tz = FixedOffset(utcoffset=-timedelta(hours=5),
+                          dstoffset=timedelta(0), abbr='EST')
+    trans = rule.transitions(prev_tz, "E%sT", 2016, 2017)
+    assert list(trans) == [
+        (datetime(2016, 3, 13, 2, 0, tzinfo=prev_tz),
+         -timedelta(hours=4), timedelta(hours=1), 'EDT'),
+    ]
+
+
+def test_us_std_rule():
+    rule = Rule(2007, 10000, None, Nov, Sun >= 1,
+                (timedelta(hours=2, minutes=0), 'wall'), '0', 'S')
+    assert rule

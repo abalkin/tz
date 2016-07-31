@@ -1,5 +1,6 @@
 import io
-from tzdata.zic import strip_comments, lines, compile_stream, compile
+from tzdata.zic import strip_comments, lines, compile_stream, compile, \
+    format_time
 from tzdata import raw_file
 import pytest
 import os
@@ -87,3 +88,14 @@ def test_generated(monkeypatch, tmpdir, file):
     with open(file + '.py') as f:
         exec(f.read(), namespace)
     assert 'Zone' in namespace
+
+
+@pytest.mark.parametrize('at,result', [
+    ('-', 'timedelta(0)'),
+    ('2', 'timedelta(hours=2)'),
+    ('2:00', 'timedelta(hours=2, minutes=0)'),
+    ('15:00', 'timedelta(hours=15, minutes=0)'),
+    ('00:00', 'timedelta(hours=0, minutes=0)'),
+])
+def test_format_time(at, result):
+    assert result == format_time(at)

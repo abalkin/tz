@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import date, timedelta, timezone
+from datetime import date, timedelta, timezone, datetime, tzinfo, time
 
 UTC = timezone.utc
 
@@ -48,7 +48,82 @@ lastSun = last(Sun)
 class Rules:
     pass
 
-Rule = namedtuple('Rule', 'begin end type in_month on at save letters')
+
+class FixedOffset(tzinfo):
+
+    def __init__(self, utcoffset, dstoffset, abbr):
+        self.__utcoffset = utcoffset
+        self.__dstoffset = dstoffset
+        self.__abbr = abbr
+        self.__stdoffset = utcoffset - dstoffset
+
+    def utcoffset(self, dt):
+        return self.__utcoffset
+
+    def tzname(self, dt):
+        return self.__abbr
+
+    def dst(self, dt):
+        return self.__dstoffset
+
+    def stdinfo(self):
+        if not self.__dstoffset:
+            return self
+        return FixedOffset(self.__utcoffset,
+                           timedelta(0),
+                           self.__abbr)
+
+    def stdoffset(self):
+        return self.__stdoffset
+
+
+class Rule:
+    def __init__(self, begin, end, type, in_month,
+                 on, at, save, letters):
+        self.begin = begin
+        self.end = end
+        self.type = type
+        self.in_month = in_month
+        self.on = (lambda y, m: on) if isinstance(on, int) else on
+        self.at = at
+        self.save = save
+        self.letters = letters
+
+    def abbr(self, fmt):
+        if '%' in fmt:
+            return fmt % self.letters
+        elif '/' in fmt:
+            abbrs = fmt.split('/', 2)
+            if self.save:
+                return abbrs[1]
+            else:
+                return abbrs[0]
+        else:
+            return fmt
+
+    def transitions(self, prev_tz, fmt, begin_year=None, end_year=None):
+        begin_year = (self.begin if begin_year is None
+                      else max(begin_year, self.begin))
+        end_year = (self.end - 1 if end_year is None
+                    else min(end_year, self.end - 1))
+
+        for year in range(begin_year, end_year):
+            month = self.in_month
+            d = self.on(year, month)
+            dt = datetime.combine(d, time())
+            delta, time_type = self.at
+            dt += delta
+            if time_type == 'wall':
+                info = prev_tz
+            elif time_type == 'std':
+                info = prev_tz.stdinfo()
+            dstoff = self.save
+            utcoff = prev_tz.stdoffset() + dstoff
+            abbr = self.abbr(fmt)
+            trans = (dt.replace(tzinfo=info), utcoff, dstoff, abbr)
+            yield trans
+            prev_tz = FixedOffset(*trans[1:])
+
 Observance = namedtuple('Observance', 'gmtoff rules format until')
 
 
