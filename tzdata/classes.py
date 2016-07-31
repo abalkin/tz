@@ -46,7 +46,10 @@ lastSun = last(Sun)
 
 
 class Rules:
-    pass
+    rules = []
+
+    def in_effect(self, year):
+        return [r for r in self.rules if r.in_effect(year)]
 
 
 class FixedOffset(tzinfo):

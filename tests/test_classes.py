@@ -3,7 +3,7 @@ from tzdata.classes import (
     Mon,
     Jul,
     last, next_month,
-    Rule, Mar, Sun, Nov, FixedOffset)
+    Rule, Mar, Sun, Nov, FixedOffset, Rules)
 from datetime import date, timedelta, datetime
 
 
@@ -58,3 +58,21 @@ def test_us_std_rule():
     rule = Rule(2007, 10000, None, Nov, Sun >= 1,
                 (timedelta(hours=2, minutes=0), 'wall'), '0', 'S')
     assert rule
+
+
+class US(Rules):
+    name = "US"
+    rules = [
+        Rule(2007, 10000, None, Mar, Sun >= 8,
+             at=(timedelta(hours=2, minutes=0), 'wall'),
+             save=timedelta(hours=1, minutes=0), letters='D'),
+        Rule(2007, 10000, None, Nov, Sun >= 1,
+             at=(timedelta(hours=2, minutes=0), 'wall'),
+             save=timedelta(hours=0), letters='S'),
+    ]
+
+
+def test_rules_in_effect():
+    rules = US()
+    rules_in_effect = rules.in_effect(2007)
+    assert len(rules_in_effect) == 2
