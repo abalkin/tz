@@ -89,6 +89,9 @@ class Rule:
         self.save = save
         self.letters = letters
 
+    def in_effect(self, year):
+        return self.begin <= year < self.end
+
     def abbr(self, fmt):
         if '%' in fmt:
             return fmt % self.letters

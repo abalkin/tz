@@ -42,6 +42,8 @@ def test_us_dst_rule():
     assert rule.abbr('E%sT') == 'EDT'
     assert rule.abbr('EST/EDT') == 'EDT'
     assert rule.abbr('PDT') == 'PDT'
+    assert rule.in_effect(2007)
+    assert not rule.in_effect(2006)
 
     prev_tz = FixedOffset(utcoffset=-timedelta(hours=5),
                           dstoffset=timedelta(0), abbr='EST')
