@@ -5,6 +5,7 @@ machine:
     version: 3.5.2
 dependencies:
   pre:
+      - git submodule update --init
       - pip install -r requirements-dev.txt
 test:
   override:
