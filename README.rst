@@ -1,6 +1,8 @@
 =============================
 tz - PEP 495 compliant tzinfo
 =============================
+.. image:: https://img.shields.io/pypi/status/tz.svg?maxAge=2592000
+   :target: https://pypi.org/project/tz
 .. image:: https://travis-ci.org/abalkin/tz.svg?branch=master
     :target: https://travis-ci.org/abalkin/tz
 .. image:: https://codecov.io/gh/abalkin/tz/branch/master/graph/badge.svg
