@@ -1,0 +1,9 @@
+machine:
+  python:
+    version: python-3.5.2
+dependencies:
+  pre:
+      - pip install -r requirements-dev.txt
+test:
+  override:
+      - paver test
