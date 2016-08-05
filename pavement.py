@@ -155,7 +155,7 @@ def coverage():
             "i.e., `pip install pytest-cov'.")
         raise SystemExit(1)
     import pytest
-    pytest.main(PYTEST_FLAGS + [
+    pytest.main(PYTEST_FLAGS + ['-v',
         '--cov', CODE_DIRECTORY,
         '--cov-report', 'term-missing',
         TESTS_DIRECTORY])
