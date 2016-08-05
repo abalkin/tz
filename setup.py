@@ -239,8 +239,8 @@ setup_dict = dict(
     # Allow tests to be run with `python setup.py test'.
     tests_require=[
         'pytest>=2.5.1',
-        'mock==1.0.1',
-        'flake8==2.1.0',
+        'mock>==1.0.1',
+        'flake8>=2.1.0',
     ],
     cmdclass={'test': TestAllCommand},
     zip_safe=False,  # don't use eggs
