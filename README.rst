@@ -14,7 +14,7 @@ tz - PEP 495 compliant tzinfo
 .. image:: https://coveralls.io/repos/github/abalkin/tz/badge.svg?branch=master
 	   :target: https://coveralls.io/github/abalkin/tz?branch=master
 
-	     Documentation
+Documentation
 =============
 * `Latest <https://abalkin.github.io/tz>`_
 
