@@ -32,6 +32,5 @@ script:
 after_success:
   - pwd
   - ls -la
-  - coverage xml
-  - bash <(curl -s https://codecov.io/bash)
   - coveralls --verbose
+  - bash <(curl -s https://codecov.io/bash)
