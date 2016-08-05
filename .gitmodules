@@ -1,0 +1,3 @@
+[submodule "tzdata/raw"]
+	path = tzdata/raw
+	url = https://github.com/eggert/tz.git
