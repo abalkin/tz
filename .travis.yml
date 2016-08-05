@@ -30,5 +30,6 @@ script:
   - paver coverage
   
 after_success:
+  - coverage xml
   - bash <(curl -s https://codecov.io/bash)
   - coveralls --verbose
