@@ -9,7 +9,10 @@ tz - PEP 495 compliant tzinfo
     :target: https://badge.fury.io/py/tz
 .. image:: https://codeship.com/projects/9773b300-3a7a-0134-d553-22ec0a671b3f/status?branch=master
     :target: https://codeship.com/projects/166333
-Documentation
+.. image:: https://coveralls.io/repos/github/abalkin/tz/badge.svg?branch=master
+	   :target: https://coveralls.io/github/abalkin/tz?branch=master
+
+	     Documentation
 =============
 * `Latest <https://abalkin.github.io/tz>`_
 
