@@ -13,6 +13,7 @@ before_install:
   - free -m
   - df -h
   - ulimit -a
+install:
   - pip install -U 'virtualenv==14.0.6'
   - virtualenv --python=python venv
   - source venv/bin/activate
@@ -21,10 +22,13 @@ before_install:
   - pip install -r requirements-dev.txt
   - pip install codecov
   - pip install pytest-cov
-
+  - pip install codecov
+  - pip install coveralls
+ 
 script:
   - paver test_all
   - paver coverage
-
+  
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  - coveralls
