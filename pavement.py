@@ -158,6 +158,7 @@ def coverage():
     pytest.main(PYTEST_FLAGS + ['-v',
         '--cov', CODE_DIRECTORY,
         '--cov-report', 'term-missing',
+        '--junit-xml', 'test-report.xml',
         TESTS_DIRECTORY])
 
 

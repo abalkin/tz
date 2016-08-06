@@ -9,4 +9,6 @@ dependencies:
       - pip install -r requirements-dev.txt
 test:
   override:
-      - paver test
+      - paver coverage
+      - mkdir -p $CIRCLE_TEST_REPORTS/junit
+      - cp test-report.xml $CIRCLE_TEST_REPORTS/junit
