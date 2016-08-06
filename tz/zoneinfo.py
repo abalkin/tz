@@ -16,7 +16,7 @@ SEC = timedelta(0, 1)
 class ZoneInfo(tzinfo):
     zoneroot = '/usr/share/zoneinfo'
 
-    def __init__(self, ut, ti, *args, **kwargs):
+    def __init__(self, ut=array('q'), ti=()):
         """
 
         :param ut: array
@@ -25,7 +25,7 @@ class ZoneInfo(tzinfo):
             A list of (offset, isdst, abbr) tuples
         :return: None
         """
-        super(ZoneInfo, self).__init__(*args, **kwargs)
+        super(ZoneInfo, self).__init__()
         self.ut = ut
         self.ti = ti
         self.lt = self.invert(ut, ti)

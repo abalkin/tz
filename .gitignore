@@ -9,6 +9,7 @@
 
 # Python
 *.py[co]
+*.pkl
 
 ## Packages
 *.egg

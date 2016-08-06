@@ -2,7 +2,8 @@ import unittest
 import sys
 
 from datetime import timedelta, timezone, datetime
-
+from array import array
+import pickle
 import pytest
 
 from tz.zoneinfo import ZoneInfo, enfold
@@ -120,3 +121,12 @@ def test_zoneinfo_nondst_folds(capsys):
     out, err = capsys.readouterr()
     assert out
     assert not err
+
+
+def test_pickle():
+    ut = array('q', [1 - 2**63])
+    ti = [(timedelta(0), False, 'UTC'), ]
+    z = ZoneInfo(ut, ti)
+    s = pickle.dumps(z)
+    r = pickle.loads(s)
+    assert z.ut == r.ut
