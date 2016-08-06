@@ -5,7 +5,7 @@ from datetime import timedelta, timezone, datetime
 
 import pytest
 
-from tz import ZoneInfo, enfold
+from tz.zoneinfo import ZoneInfo, enfold
 
 
 def test_enfold():
