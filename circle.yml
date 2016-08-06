@@ -12,3 +12,5 @@ test:
       - paver coverage
       - mkdir -p $CIRCLE_TEST_REPORTS/junit
       - cp test-report.xml $CIRCLE_TEST_REPORTS/junit
+      - mkdir -p $CIRCLE_ARTIFACTS/coverage
+      - coverage html -d $CIRCLE_ARTIFACTS/coverage
