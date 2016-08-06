@@ -15,6 +15,7 @@ tz - PEP 495 compliant tzinfo
     :target: https://coveralls.io/github/abalkin/tz?branch=master
 .. image:: https://circleci.com/gh/abalkin/tz/tree/master.svg?circle-token=:circle-token
     :target: https://circleci.com/gh/abalkin/tz/tree/master
+
 Documentation
 =============
 * `Latest <https://abalkin.github.io/tz>`_
