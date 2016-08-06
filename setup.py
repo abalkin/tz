@@ -253,7 +253,35 @@ setup_dict = dict(
         # 'gui_scripts': [
         #     'tz_gui = tz.gui:entry_point'
         # ]
-    }
+    },
+    package_dir={
+        'tzdata': 'tzdata',
+        'tz': 'tz',
+    },
+    package_data={
+        'tzdata': [
+            'raw/africa',
+            'raw/antarctica',
+            'raw/asia',
+            'raw/australasia',
+            'raw/europe',
+            'raw/northamerica',
+            'raw/southamerica',
+            'raw/zone1970.tab',
+        ],
+        'tz': [
+            'Africa.pkl',
+            'America.pkl',
+            'Antarctica.pkl',
+            'Arctic.pkl',
+            'Asia.pkl',
+            'Atlantic.pkl',
+            'Australia.pkl',
+            'Europe.pkl',
+            'Indian.pkl',
+            'Pacific.pkl',
+        ],
+    },
 )
 
 

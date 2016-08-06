@@ -18,3 +18,24 @@ include requirements-dev.txt
 include requirements.txt
 include setup.py
 include tox.ini
+
+# Raw IANA files
+include tzdata/raw/africa
+include tzdata/raw/antarctica
+include tzdata/raw/australasia
+include tzdata/raw/europe
+include tzdata/raw/northamerica
+include tzdata/raw/southamerica
+include tzdata/raw/zone1970.tab
+
+# Pickles
+include tz/Africa.pkl
+include tz/America.pkl
+include tz/Antarctica.pkl
+include tz/Arctic.pkl
+include tz/Asia.pkl
+include tz/Atlantic.pkl
+include tz/Australia.pkl
+include tz/Europe.pkl
+include tz/Indian.pkl
+include tz/Pacific.pkl

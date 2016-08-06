@@ -23,7 +23,7 @@ class Area:
         if '/' not in name:
             try:
                 return cls.load(name)
-            except FileNotFoundError:
+            except (FileNotFoundError, EOFError):
                 pass
         self = object.__new__(cls)
         self.name = name
@@ -37,6 +37,7 @@ class Area:
                 setattr(self, loc.replace('-', ''), info)
         if '/' not in name:
             self.save()
+        return self
 
     @classmethod
     def load(cls, name):
