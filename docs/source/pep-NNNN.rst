@@ -37,9 +37,29 @@ Introduction
 New packages
 ============
 
+The tz package
+--------------
+
+The tzdata package
+------------------
+
 
 Changes to the datetime module
 ==============================
+
+The tzinfo factory
+------------------
+
+The ``datetime.tzinfo`` constructor will become a factory method that
+takes a text string in formats acceptable for the TZ environment variable.
+For example,
+
+::
+   >>> import datetime
+   >>> datetime.tzinfo('America/New_York')
+   tz.America.New_York
+   >>> datetime.tzinfo('AEST-10AEDT,M10.1.0,M4.1.0/3')
+   tz.PosixRules('AEST-10AEDT,M10.1.0,M4.1.0/3')
 
 
 References
