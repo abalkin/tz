@@ -1,4 +1,4 @@
-from datetime import tzinfo, timedelta, date, datetime
+from datetime import tzinfo, timedelta, date, datetime, time
 from .tools import pairs, enfold
 import bisect
 import os
@@ -16,6 +16,9 @@ SEC = timedelta(0, 1)
 class ZoneInfo(tzinfo):
     zoneroot = '/usr/share/zoneinfo'
 
+    version = 0
+    posix_rules = None
+
     def __init__(self, ut=array('q'), ti=()):
         """
 
@@ -29,7 +32,6 @@ class ZoneInfo(tzinfo):
         self.ut = ut
         self.ti = ti
         self.lt = self.invert(ut, ti)
-        self.version = 0
 
     @staticmethod
     def invert(ut, ti):
@@ -104,6 +106,10 @@ class ZoneInfo(tzinfo):
 
         abbrs = fileobj.read(charcnt)
 
+        # Skip to POSIX TZ string
+        fileobj.seek(8 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
+        posix_rules = fileobj.read()
+
         # Convert ttis
         for i, (gmtoff, isdst, abbrind) in enumerate(ttis):
             abbr = abbrs[abbrind:abbrs.find(0, abbrind)].decode()
@@ -115,6 +121,8 @@ class ZoneInfo(tzinfo):
 
         self = cls(ut, ti)
         self.version = version
+        if posix_rules:
+            self.posix_rules = PosixRules(posix_rules.decode('ascii'))
 
         return self
 
@@ -303,6 +311,63 @@ class ZoneInfo(tzinfo):
         if os.path.exists(path):
             return path
         raise SystemError('Missing zone.tab')
+
+
+def parse_std_dst(std_dst):
+    digit = False
+    i = 0
+    for j, ch in enumerate(std_dst):
+        if digit:
+            if not ch.isdigit():
+                break
+        else:
+            if ch.isdigit():
+                i = j
+                digit = True
+    else:
+        j = len(std_dst)
+    # At this point i points at the first digit and
+    # j points at the first char of dst
+    if std_dst[i - 1] in '+-':
+        i -= 1
+    std = std_dst[:i]
+    offset = int(std_dst[i:j])
+    dst = std_dst[j:]
+    return offset, (std, dst)
+
+
+def parse_mnd_time(mnd_time):
+    if not mnd_time.startswith('M'):
+        raise ValueError
+    if '/' in mnd_time:
+        mnd, t = mnd_time.split('/')
+        t = time(int(t))
+    else:
+        mnd = mnd_time
+        t = time(2)
+    mnd = tuple(int(part) for part in mnd[1:].split('.'))
+    return mnd, t
+
+
+class PosixRules(tzinfo):
+    dst_start = None
+    dst_end = None
+
+    def __init__(self, posix_rules):
+        r = posix_rules.strip().split(',')
+        self.offset, self.abbrs = parse_std_dst(r[0])
+        if len(r) > 2:
+            self.dst_start = parse_mnd_time(r[1])
+            self.dst_end = parse_mnd_time(r[2])
+
+    def tzname(self, dt):
+        pass
+
+    def utcoffset(self, dt):
+        pass
+
+    def dst(self, dt):
+        pass
 
 
 def is_tzfile(p):

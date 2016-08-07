@@ -1,12 +1,12 @@
 import unittest
 import sys
 
-from datetime import timedelta, timezone, datetime
+from datetime import timedelta, timezone, datetime, time
 from array import array
 import pickle
 import pytest
 
-from tz.zoneinfo import ZoneInfo, enfold
+from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time
 
 
 def test_enfold():
@@ -130,3 +130,20 @@ def test_pickle():
     s = pickle.dumps(z)
     r = pickle.loads(s)
     assert z.ut == r.ut
+
+
+@pytest.mark.parametrize('std_dst, parsed', [
+    ('EST5EDT', (5, ('EST', 'EDT'))),
+    ('CET-1CEST', (-1, ('CET', 'CEST'))),
+    ('MSK-3', (-3, ('MSK', ''))),
+])
+def test_parse_std_dst(std_dst, parsed):
+    assert parsed == parse_std_dst(std_dst)
+
+
+@pytest.mark.parametrize('mnd_time, parsed', [
+    ('M10.5.0', ((10, 5, 0), time(2))),
+    ('M10.5.0/3', ((10, 5, 0), time(3))),
+])
+def test_parse_mnd_time(mnd_time, parsed):
+    assert parsed == parse_mnd_time(mnd_time)
