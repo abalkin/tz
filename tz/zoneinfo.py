@@ -1,4 +1,4 @@
-from datetime import tzinfo, timedelta, date, datetime, time
+from datetime import tzinfo, timedelta, date, datetime
 from .tools import pairs, enfold
 import bisect
 import os
@@ -333,7 +333,7 @@ def parse_std_dst(std_dst):
     std = std_dst[:i]
     offset = int(std_dst[i:j])
     dst = std_dst[j:]
-    return offset, (std, dst)
+    return timedelta(hours=-offset), (std, dst)
 
 
 def parse_mnd_time(mnd_time):
@@ -341,10 +341,10 @@ def parse_mnd_time(mnd_time):
         raise ValueError
     if '/' in mnd_time:
         mnd, t = mnd_time.split('/')
-        t = time(int(t))
+        t = timedelta(hours=int(t))
     else:
         mnd = mnd_time
-        t = time(2)
+        t = timedelta(hours=2)
     mnd = tuple(int(part) for part in mnd[1:].split('.'))
     return mnd, t
 
@@ -361,13 +361,79 @@ class PosixRules(tzinfo):
             self.dst_end = parse_mnd_time(r[2])
 
     def tzname(self, dt):
-        pass
+        is_dst = bool(self.dst(dt))
+        return self.abbrs[is_dst]
 
     def utcoffset(self, dt):
-        pass
+        return self.offset + self.dst(dt)
 
     def dst(self, dt):
-        pass
+        if self.dst_start is None:
+            return ZERO
+        start, end = self.transitions(dt.year)
+        # Can't compare naive to aware objects, so strip the timezone from
+        # dt first.
+        dt = dt.replace(tzinfo=None)
+        if start < end:  # Northern hemisphere
+            if start + HOUR <= dt < end:
+                # DST is in effect.
+                return HOUR
+            if end <= dt < end + HOUR:
+                # Fold (an ambiguous hour): use dt.fold to disambiguate.
+                return ZERO if getattr(dt, 'fold', 0) else HOUR
+            if start <= dt < start + HOUR:
+                # Gap (a non-existent hour): reverse the fold rule.
+                return HOUR if getattr(dt, 'fold', 0) else ZERO
+        else:  # Southern hemisphere (DST straddles the New Year)
+            if start + HOUR <= dt or dt < end:
+                # DST is in effect.
+                return HOUR
+            if end <= dt < end + HOUR:
+                # Fold (an ambiguous hour): use dt.fold to disambiguate.
+                return ZERO if getattr(dt, 'fold', 0) else HOUR
+            if start <= dt < start + HOUR:
+                # Gap (a non-existent hour): reverse the fold rule.
+                return HOUR if getattr(dt, 'fold', 0) else ZERO
+        # DST is off.
+        return ZERO
+
+    def transitions(self, year):
+        mnd, delta = self.dst_start
+        start = dth_day_of_week_n(year, *mnd) + delta
+        mnd, delta = self.dst_end
+        end = dth_day_of_week_n(year, *mnd) + delta
+        return start, end
+
+
+def next_month(year, month):
+    month += 1
+    return year + month // 12, month % 12
+
+
+def dth_day_of_week_n(y, m, n, d):
+    """Return he d'th day (0 <= d <= 6) of week n of month m of the  year.
+
+    (1 <= n <= 5, 1 <= m <= 12,  where  week 5 means "the last d day in
+    month m" which may  occur in  either  the  fourth  or  the  fifth week).
+    Week 1 is  the  first  week  in which the d'th day occurs.  Day zero is
+    Sunday.
+
+    :param year:
+    :param m: month
+    :param n: week number
+    :param d: day (0 <= d <= 6) of week
+    :return: datetime
+    """
+    if n == 5:
+        # Compute the last dow of the month.
+        y, m = next_month(y, m)
+        dt = datetime(y, m, 1) - timedelta(1)
+        # Move back to the given dow.
+        dt -= timedelta((dt.weekday() - d + 1) % 7)
+    else:
+        dt = datetime(y, m, 1)
+        dt += timedelta((d - dt.weekday() - 1) % 7 + 7 * (n - 1))
+    return dt
 
 
 def is_tzfile(p):

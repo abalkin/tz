@@ -1,12 +1,13 @@
 import unittest
 import sys
 
-from datetime import timedelta, timezone, datetime, time
+from datetime import timedelta, timezone, datetime
 from array import array
 import pickle
 import pytest
 
-from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time
+from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time, \
+    dth_day_of_week_n, PosixRules, HOUR, ZERO
 
 
 def test_enfold():
@@ -133,17 +134,63 @@ def test_pickle():
 
 
 @pytest.mark.parametrize('std_dst, parsed', [
-    ('EST5EDT', (5, ('EST', 'EDT'))),
-    ('CET-1CEST', (-1, ('CET', 'CEST'))),
-    ('MSK-3', (-3, ('MSK', ''))),
+    ('EST5EDT', (timedelta(hours=-5), ('EST', 'EDT'))),
+    ('CET-1CEST', (timedelta(hours=1), ('CET', 'CEST'))),
+    ('MSK-3', (timedelta(hours=3), ('MSK', ''))),
 ])
 def test_parse_std_dst(std_dst, parsed):
     assert parsed == parse_std_dst(std_dst)
 
 
 @pytest.mark.parametrize('mnd_time, parsed', [
-    ('M10.5.0', ((10, 5, 0), time(2))),
-    ('M10.5.0/3', ((10, 5, 0), time(3))),
+    ('M10.5.0', ((10, 5, 0), 2 * HOUR)),
+    ('M10.5.0/3', ((10, 5, 0), 3 * HOUR)),
 ])
 def test_parse_mnd_time(mnd_time, parsed):
     assert parsed == parse_mnd_time(mnd_time)
+
+
+@pytest.mark.parametrize('y, m, n, d, day', [
+    (2016, 8, 1, 0, 7),
+    (2016, 8, 5, 0, 28),
+])
+def test_dth_day_of_week_n(y, m, n, d, day):
+    dt = dth_day_of_week_n(y, m, n, d)
+    assert dt.weekday() == (d - 1) % 7
+    assert dt.timetuple()[:3] == (y, m, day)
+
+
+@pytest.mark.parametrize('tz, year, dst_start, dst_end', [
+    # New York
+    ('EST5EDT,M3.2.0,M11.1.0', 2016,
+     datetime(2016, 3, 13, 2), datetime(2016, 11, 6, 2)),
+    # Sydney, Australia
+    ('AEST-10AEDT,M10.1.0,M4.1.0/3', 2016,
+     datetime(2016, 10, 2, 2), datetime(2016, 4, 3, 3)),
+])
+def test_posix_rules_transitions(tz, year, dst_start, dst_end):
+    info = PosixRules(tz)
+    assert (dst_start, dst_end) == info.transitions(year)
+    dst_time = (dst_start + timedelta(1)).replace(tzinfo=info)
+    assert dst_time.dst() == HOUR
+    std_time = (dst_end + timedelta(1)).replace(tzinfo=info)
+    assert std_time.dst() == ZERO
+    # Ambiguous hour: the next hour after DST end.
+    fold_time_0 = (dst_end + HOUR / 2).replace(tzinfo=info)
+    fold_time_1 = enfold(fold_time_0, 1)
+    assert fold_time_0.dst() == HOUR
+    assert fold_time_1.dst() == ZERO
+    # Skipped hour: the next hour after DST start
+    gap_time_0 = (dst_start + HOUR / 2).replace(tzinfo=info)
+    gap_time_1 = enfold(gap_time_0, 1)
+    assert gap_time_0.dst() == ZERO
+    assert gap_time_1.dst() == HOUR
+    # Check that DST is an hour ahead of STD
+    delta = dst_time.utcoffset() - std_time.utcoffset()
+    assert delta == HOUR
+    # Check that STD/DST abbreviations are correctly encoded in the TZ string
+    std_dst = tz.split(',', 2)[0]
+    std = std_time.tzname()
+    dst = dst_time.tzname()
+    assert std_dst.startswith(std)
+    assert std_dst.endswith(dst)
