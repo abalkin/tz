@@ -52,9 +52,7 @@ The tzinfo factory
 
 The ``datetime.tzinfo`` constructor will become a factory method that
 takes a text string in formats acceptable for the TZ environment variable.
-For example,
-
-::
+For example::
    >>> import datetime
    >>> datetime.tzinfo('America/New_York')
    tz.America.New_York
