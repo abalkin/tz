@@ -156,7 +156,6 @@ def coverage():
         raise SystemExit(1)
     import pytest
     pytest.main(PYTEST_FLAGS + [
-        '--verbose', '--showlocals',
         '--cov', CODE_DIRECTORY,
         '--cov-report', 'term-missing',
         '--junit-xml', 'test-report.xml',

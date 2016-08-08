@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.abspath('.'))
 CODE_DIRECTORY = 'tz'
 DOCS_DIRECTORY = 'docs'
 TESTS_DIRECTORY = 'tests'
-PYTEST_FLAGS = ['--doctest-modules']
+PYTEST_FLAGS = ['--doctest-modules', '--verbose', '--showlocals']
 
 # Import metadata. Normally this would just be:
 #
