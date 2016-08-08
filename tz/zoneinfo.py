@@ -421,7 +421,9 @@ class PosixRules(tzinfo):
     def __new__(cls, tz=None, *args):
         return tzinfo.__new__(cls, *args)
 
-    def __init__(self, posix_rules):
+    def __init__(self, posix_rules=None):
+        if posix_rules is None:
+            return
         r = posix_rules.strip().split(',')
         self.offset, self.abbrs = parse_std_dst(r[0])
         if len(r) > 2:
