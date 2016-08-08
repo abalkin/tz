@@ -353,7 +353,7 @@ def parse_time(time_str):
     if time_str.startswith(('+', '-')):
         neg = '-' == time_str[0]
         time_str = time_str[1:]
-    parts = [int(p.lstrip('0')) for p in time_str.split(':')]
+    parts = [int(p.lstrip('0') or '0') for p in time_str.split(':')]
     kwds = dict(zip(TIME_COMPONENTS, parts))
     if neg:
         return -timedelta(**kwds)
