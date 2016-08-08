@@ -261,9 +261,14 @@ class ZoneInfo(tzinfo):
         min_fold_zone = max_fold_zone = None
         # Starting from 1970 eliminates a lot of noise
         stats_since = datetime(start_year, 1, 1)
+        errors = []
         for zonename in cls.zonenames():
+            try:
+                tz = cls.fromname(zonename)
+            except ValueError as e:
+                errors.append((zonename, e))
+                continue
             count += 1
-            tz = cls.fromname(zonename)
             for dt, shift in tz.transitions():
                 if dt < stats_since:
                     continue
@@ -305,6 +310,10 @@ class ZoneInfo(tzinfo):
               (min_fold, min_fold_datetime, min_fold_zone))
         print("Max fold:        %16s at %s in %s" %
               (max_fold, max_fold_datetime, max_fold_zone))
+        for name, e in errors:
+            print("ERROR in %s: %s" % (name, e))
+        if errors:
+            raise errors[0][1]
 
     def transitions(self):
         for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
