@@ -7,7 +7,7 @@ import pickle
 import pytest
 
 from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time, \
-    dth_day_of_week_n, PosixRules, HOUR, ZERO
+    dth_day_of_week_n, PosixRules, HOUR, ZERO, parse_time
 
 
 def test_enfold():
@@ -142,6 +142,16 @@ def test_parse_std_dst(std_dst, parsed):
     assert parsed == parse_std_dst(std_dst)
 
 
+@pytest.mark.parametrize('time_str, delta', [
+    ('3', timedelta(hours=3)),
+    ('3:45', timedelta(hours=3, minutes=45)),
+    ('123:12:10', timedelta(hours=123, minutes=12, seconds=10)),
+    ('-12:45', -timedelta(hours=12, minutes=45)),
+])
+def test_parse_time(time_str, delta):
+    assert delta == parse_time(time_str)
+
+
 @pytest.mark.parametrize('mnd_time, parsed', [
     ('M10.5.0', ((10, 5, 0), 2 * HOUR)),
     ('M10.5.0/3', ((10, 5, 0), 3 * HOUR)),
@@ -167,6 +177,9 @@ def test_dth_day_of_week_n(y, m, n, d, day):
     # Sydney, Australia
     ('AEST-10AEDT,M10.1.0,M4.1.0/3', 2016,
      datetime(2016, 10, 2, 2), datetime(2016, 4, 3, 3)),
+    # Exotic: Chatham, Pacific
+    ('CHAST-12:45CHADT,M9.5.0/2:45,M4.1.0/3:45', 2016,
+     datetime(2016, 9, 25, 2, 45), datetime(2016, 4, 3, 3, 45)),
 ])
 def test_posix_rules_transitions(tz, year, dst_start, dst_end):
     info = PosixRules(tz)

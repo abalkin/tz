@@ -341,9 +341,24 @@ def parse_std_dst(std_dst):
     if std_dst[i - 1] in '+-':
         i -= 1
     std = std_dst[:i]
-    offset = int(std_dst[i:j])
+    offset = parse_time(std_dst[i:j])
     dst = std_dst[j:]
-    return timedelta(hours=-offset), (std, dst)
+    return -offset, (std, dst)
+
+TIME_COMPONENTS = ['hours', 'minutes', 'seconds']
+
+
+def parse_time(time_str):
+    neg = False
+    if time_str.startswith(('+', '-')):
+        neg = '-' == time_str[0]
+        time_str = time_str[1:]
+    parts = [int(p.lstrip('0')) for p in time_str.split(':')]
+    kwds = dict(zip(TIME_COMPONENTS, parts))
+    if neg:
+        return -timedelta(**kwds)
+    else:
+        return timedelta(**kwds)
 
 
 def parse_mnd_time(mnd_time):
@@ -351,7 +366,7 @@ def parse_mnd_time(mnd_time):
         raise ValueError
     if '/' in mnd_time:
         mnd, t = mnd_time.split('/')
-        t = timedelta(hours=int(t))
+        t = parse_time(t)
     else:
         mnd = mnd_time
         t = timedelta(hours=2)
