@@ -118,9 +118,12 @@ class ZoneInfo(tzinfo):
 
         abbrs = fileobj.read(charcnt)
 
-        # Skip to POSIX TZ string
-        fileobj.seek(8 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
-        posix_rules = fileobj.read().strip()
+        if version > 0:
+            # Skip to POSIX TZ string
+            fileobj.seek(8 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
+            posix_rules = fileobj.read().strip()
+        else:
+            posix_rules = b''
 
         # Convert ttis
         for i, (gmtoff, isdst, abbrind) in enumerate(ttis):
