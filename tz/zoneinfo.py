@@ -120,7 +120,7 @@ class ZoneInfo(tzinfo):
 
         if version > 0:
             # Skip to POSIX TZ string
-            fileobj.seek(8 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
+            fileobj.seek(12 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
             posix_rules = fileobj.read().strip()
         else:
             posix_rules = b''
@@ -137,13 +137,7 @@ class ZoneInfo(tzinfo):
         self = cls(ut, ti)
         self.version = version
         if posix_rules:
-            try:
-                self.posix_rules = PosixRules(posix_rules.decode('ascii'))
-            except UnicodeDecodeError:
-                # TODO: Issue a warning and investigate the causes.
-                # The probable cause is incorrect accounting for leap seconds
-                # in the "right" files.
-                pass
+            self.posix_rules = PosixRules(posix_rules.decode('ascii'))
 
         return self
 
