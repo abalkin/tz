@@ -137,7 +137,13 @@ class ZoneInfo(tzinfo):
         self = cls(ut, ti)
         self.version = version
         if posix_rules:
-            self.posix_rules = PosixRules(posix_rules.decode('ascii'))
+            try:
+                self.posix_rules = PosixRules(posix_rules.decode('ascii'))
+            except UnicodeDecodeError:
+                # TODO: Issue a warning and investigate the causes.
+                # The probable cause is incorrect accounting for leap seconds
+                # in the "right" files.
+                pass
 
         return self
 
