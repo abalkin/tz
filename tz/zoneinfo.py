@@ -1,4 +1,4 @@
-from datetime import tzinfo, timedelta, date, datetime
+from datetime import tzinfo as _tzinfo, timedelta, date, datetime
 from .tools import pairs, enfold
 import bisect
 import os
@@ -11,6 +11,16 @@ __all__ = ['ZoneInfo']
 ZERO = timedelta(0)
 HOUR = timedelta(hours=1)
 SEC = timedelta(0, 1)
+
+
+class tzinfo(_tzinfo):
+    def __new__(cls, tz=None, *args):
+        if not isinstance(tz, str):
+            return _tzinfo.__new__(cls)
+        try:
+            return ZoneInfo.fromname(tz)
+        except OSError:
+            return PosixRules(tz)
 
 
 class ZoneInfo(tzinfo):
@@ -108,7 +118,7 @@ class ZoneInfo(tzinfo):
 
         # Skip to POSIX TZ string
         fileobj.seek(8 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
-        posix_rules = fileobj.read()
+        posix_rules = fileobj.read().strip()
 
         # Convert ttis
         for i, (gmtoff, isdst, abbrind) in enumerate(ttis):
@@ -352,6 +362,9 @@ def parse_mnd_time(mnd_time):
 class PosixRules(tzinfo):
     dst_start = None
     dst_end = None
+
+    def __new__(cls, tz=None, *args):
+        return tzinfo.__new__(cls, *args)
 
     def __init__(self, posix_rules):
         r = posix_rules.strip().split(',')

@@ -2,7 +2,10 @@
 import os
 import pickle
 from . import metadata
-from .zoneinfo import ZoneInfo
+from .zoneinfo import tzinfo, ZoneInfo
+
+__all__ = ['America', 'Europe', 'Australia', 'Antarctica',  'Asia', 'Africa',
+           'Arctic', 'Pacific', 'Atlantic', 'Indian', 'tzinfo']
 
 __version__ = metadata.version
 __author__ = metadata.authors[0]
