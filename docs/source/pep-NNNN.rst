@@ -65,6 +65,10 @@ References
 
 .. [1] PEP 431 - Time zone support improvements
    (https://www.python.org/dev/peps/pep-0431/)
+.. [2] Sources for time zone and daylight saving time data
+   (https://www.iana.org/time-zones/repository/tz-link.html)
+.. [3] RFC 7808 - Time Zone Data Distribution Service
+   (https://tools.ietf.org/html/rfc7808)
 
 
 Copyright
