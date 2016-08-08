@@ -28,6 +28,8 @@ class ZoneInfo(tzinfo):
 
     version = 0
     posix_rules = None
+    area_lookup = None
+    country_lookup = None
 
     def __init__(self, ut=array('q'), ti=()):
         """
@@ -195,7 +197,36 @@ class ZoneInfo(tzinfo):
         return self._find_ti(dt, 2)
 
     @classmethod
+    def read_zone_file(cls):
+        path = os.path.join(cls.zoneroot, 'zone.tab')
+        try:
+            f = open(path)
+        except OSError:
+            return
+        cls.country_lookup = {}
+        cls.area_lookup = {}
+        with f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                country_code, coordinates, tz = line.split('\t', 4)[:3]
+                cls.country_lookup.setdefault(country_code, []
+                                              ).append((coordinates, tz))
+                area, location = tz.rsplit('/', 1)
+                cls.area_lookup.setdefault(area, set()).add(location)
+                while '/' in area:
+                    area, subarea = area.rsplit('/', 1)
+                    cls.area_lookup.setdefault(area, set()).add(subarea + '/')
+
+    @classmethod
     def list_area(cls, area):
+        cls.read_zone_file()
+        if cls.area_lookup is not None:
+            for name in cls.area_lookup[area]:
+                    yield name
+            return
+        # If 'zone.tab' file is not present - walk the tzinfo tree.
         path = os.path.join(cls.zoneroot, area)
         for name in os.listdir(path):
             p = os.path.join(path, name)
