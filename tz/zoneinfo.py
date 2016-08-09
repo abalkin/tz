@@ -15,9 +15,15 @@ SEC = timedelta(0, 1)
 
 
 class tzinfo(_tzinfo):
+    cache = {}
+
     def __new__(cls, tz=None, *args):
         if not isinstance(tz, str):
             return _tzinfo.__new__(cls)
+        try:
+            return cls.cache[tz]
+        except KeyError:
+            pass
         try:
             return PosixRules(tz)
         except ValueError:
@@ -32,6 +38,9 @@ class ZoneInfo(tzinfo):
     area_lookup = None
     country_lookup = None
 
+    tzid = None     # The canonical zone name, e.g. 'America/New_York'
+    tzrepr = None   # If set, returned by __repr__.
+
     def __init__(self, ut=array('q'), ti=()):
         """
 
@@ -45,6 +54,17 @@ class ZoneInfo(tzinfo):
         self.ut = ut
         self.ti = ti
         self.lt = self.invert(ut, ti)
+
+    def __repr__(self):
+        tzrepr = self.tzrepr
+        if tzrepr is not None:
+            return tzrepr
+        tzid = self.tzid
+        cls = type(self)
+        if tzid is not None:
+            return "%s.%s(%r)" % (cls.__module__, cls.__name__, tzid)
+        return "<%s.%s object at 0x%x: %d transitions>" % (
+            cls.__module__, cls.__name__, id(self), len(self.ut))
 
     @staticmethod
     def invert(ut, ti):
@@ -146,7 +166,9 @@ class ZoneInfo(tzinfo):
     def fromname(cls, name, version=None):
         path = os.path.join(cls.zoneroot, name)
         with open(path, 'rb') as f:
-            return cls.fromfile(f, version)
+            self = cls.fromfile(f, version)
+        self.tzid = name
+        return self
 
     EPOCHORDINAL = date(1970, 1, 1).toordinal()
 

@@ -13,10 +13,19 @@ __license__ = metadata.license
 __copyright__ = metadata.copyright
 
 PKG_DIR = os.path.dirname(__file__)
+CHAR_MAP = {
+    ord('/'): '.',
+    ord('-'): '_',
+    ord('.'): None,
+}
 
 
 def get(name):
     return ZoneInfo.fromname(name)
+
+
+def clean_name(area_id):
+    return area_id.translate(CHAR_MAP)
 
 
 class Area:
@@ -36,11 +45,17 @@ class Area:
                 area = Area('/'.join([name, loc]))
                 setattr(self, loc.replace('-', ''), area)
             else:
-                info = ZoneInfo.fromname('/'.join([name, loc]))
+                tzid = '/'.join([name, loc])
+                info = ZoneInfo.fromname(tzid)
+                info.tzrepr = 'tz.' + clean_name(tzid)
                 setattr(self, loc.replace('-', ''), info)
         if '/' not in name:
             self.save()
         return self
+
+    def __repr__(self):
+        cls = type(self)
+        return "%s.%s(%r)" % (cls.__module__, cls.__name__, self.name)
 
     @classmethod
     def load(cls, name):

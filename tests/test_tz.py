@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, tzinfo
 
+import pytest
+
 import tz
 from tz.zoneinfo import ZoneInfo
 
@@ -24,3 +26,11 @@ def test_complete():
     for loc in locations:
         info = eval('tz.' + loc.replace('/', '.').replace('-', ''))
         assert isinstance(info, tzinfo)
+
+
+@pytest.mark.parametrize('z', [
+    'tz.America.Argentina.Buenos_Aires',
+    "tz.Area('America/Argentina')",
+])
+def test_tz_repr(z):
+    assert repr(eval(z)) == z

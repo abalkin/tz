@@ -230,3 +230,8 @@ def test_posix_rules_transitions(tz, year, dst_start, dst_end):
     dst = dst_time.tzname()
     assert std_dst.startswith(std)
     assert std_dst.endswith(dst)
+
+
+def test_repr():
+    z = ZoneInfo.fromname('America/New_York')
+    assert repr(z) == "tz.zoneinfo.ZoneInfo('America/New_York')"
