@@ -235,3 +235,13 @@ def test_posix_rules_transitions(tz, year, dst_start, dst_end):
 def test_repr():
     z = ZoneInfo.fromname('America/New_York')
     assert repr(z) == "tz.zoneinfo.ZoneInfo('America/New_York')"
+
+
+def test_far_future(zoneinfo):
+    with zoneinfo.join('America', 'New_York').open('br') as f:
+        z = ZoneInfo.fromfile(f)
+    assert z.version == 2
+    far_summer = datetime(9999, 6, 1, tzinfo=z)
+    far_winter = datetime(9999, 12, 1, tzinfo=z)
+    assert far_summer.dst()
+    assert not far_winter.dst()
