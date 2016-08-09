@@ -34,11 +34,14 @@ class Area:
             return object.__new__(cls)
         if '/' not in name:
             try:
-                return cls.load(name)
+                self = cls.load(name)
+                tzinfo.cache.update(self.all)
+                return self
             except (FileNotFoundError, EOFError):
                 pass
         self = object.__new__(cls)
         self.name = name
+        self.all = {}
         for loc in ZoneInfo.list_area(name):
             if loc.endswith('/'):
                 loc = loc[:-1]
@@ -49,6 +52,7 @@ class Area:
                 info = ZoneInfo.fromname(tzid)
                 info.tzrepr = clean_name(tzid)
                 setattr(self, loc.replace('-', ''), info)
+                self.all[tzid] = tzinfo.cache[tzid] = info
         if '/' not in name:
             self.save()
         return self

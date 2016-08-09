@@ -44,3 +44,8 @@ def test_pickle(z):
     info = eval(z)
     s = pickle.dumps(info)
     assert info is pickle.loads(s)
+
+
+def test_tzinfo_cache():
+    z = tz.tzinfo('America/New_York')
+    assert z is tz.America.New_York

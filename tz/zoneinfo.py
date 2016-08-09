@@ -50,6 +50,11 @@ class ZoneInfo(tzinfo):
             A list of (offset, isdst, abbr) tuples
         :return: None
         """
+        if self.tzid is not None:
+            # XXX: self is already initialized by the superclass
+            # __new__.  Revisit this logic considering only using
+            # __new__ in all classes.
+            return
         super(ZoneInfo, self).__init__()
         self.ut = ut
         self.ti = ti
