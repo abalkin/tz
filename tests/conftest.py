@@ -3,9 +3,11 @@ import base64
 import io
 
 
-@pytest.fixture
-def zoneinfo(tmpdir):
+@pytest.fixture(scope='session')
+def zoneinfo(tmpdir_factory):
+    """A fake zoneinfo tree."""
     infile = io.BytesIO(New_York)
+    tmpdir = tmpdir_factory.mktemp('zoneinfo')
     outpath = tmpdir.ensure('America', 'New_York')
     with outpath.open('bw') as outfile:
         base64.decode(infile, outfile)
