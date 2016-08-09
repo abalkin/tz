@@ -438,17 +438,21 @@ class PosixRules(tzinfo):
     dst_start = None
     dst_end = None
 
-    def __new__(cls, tz=None, *args):
-        return tzinfo.__new__(cls, *args)
+    def __reduce__(self):
+        return PosixRules, (self.tzstr, )
 
-    def __init__(self, posix_rules=None):
-        if posix_rules is None:
-            return
+    def __repr__(self):
+        return 'tz.zoneinfo.PosixRules(%r)' % self.tzstr
+
+    def __new__(cls, posix_rules):
+        self = _tzinfo.__new__(cls)
+        self.tzstr = posix_rules
         r = posix_rules.strip().split(',')
         self.offset, self.abbrs = parse_std_dst(r[0])
         if len(r) > 2:
             self.dst_start = parse_mnd_time(r[1])
             self.dst_end = parse_mnd_time(r[2])
+        return self
 
     def tzname(self, dt):
         is_dst = bool(self.dst(dt))

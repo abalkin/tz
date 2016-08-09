@@ -133,6 +133,13 @@ def test_pickle():
     assert z.ut == r.ut
 
 
+def test_posix_rules_pickle():
+    z = PosixRules('EST+05EDT')
+    s = pickle.dumps(z)
+    r = pickle.loads(s)
+    assert r.tzstr == z.tzstr
+
+
 @pytest.mark.parametrize('std_dst, parsed', [
     ('EST5EDT', (timedelta(hours=-5), ('EST', 'EDT'))),
     ('CET-1CEST', (timedelta(hours=1), ('CET', 'CEST'))),
