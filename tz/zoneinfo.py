@@ -407,7 +407,8 @@ def parse_time(time_str):
 
 def parse_mnd_time(mnd_time):
     if not mnd_time.startswith(('M', 'J')):
-        raise ValueError("Expected a string starting with 'M' or 'J'", mnd_time)
+        raise ValueError("Expected a string starting with 'M' or 'J'",
+                         mnd_time)
     if '/' in mnd_time:
         mnd, t = mnd_time.split('/')
         t = parse_time(t)
