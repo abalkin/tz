@@ -19,9 +19,9 @@ class tzinfo(_tzinfo):
         if not isinstance(tz, str):
             return _tzinfo.__new__(cls)
         try:
-            return ZoneInfo.fromname(tz)
-        except OSError:
             return PosixRules(tz)
+        except ValueError:
+            return ZoneInfo.fromname(tz)
 
 
 class ZoneInfo(tzinfo):
