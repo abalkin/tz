@@ -7,7 +7,7 @@ import pickle
 import pytest
 
 from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time, \
-    dth_day_of_week_n, PosixRules, HOUR, ZERO, parse_time
+    dth_day_of_week_n, PosixRules, HOUR, ZERO, parse_time, julian_day
 
 
 def test_enfold():
@@ -152,12 +152,15 @@ def test_parse_time(time_str, delta):
     assert delta == parse_time(time_str)
 
 
-@pytest.mark.parametrize('mnd_time, parsed', [
-    ('M10.5.0', ((10, 5, 0), 2 * HOUR)),
-    ('M10.5.0/3', ((10, 5, 0), 3 * HOUR)),
+@pytest.mark.parametrize('mnd_time, dt', [
+    ('M10.5.0', (2016, 10, 30, 2)),
+    ('M10.5.0/3', (2016, 10, 30, 3)),
+    ('J59/0', (2016, 2, 28, 0)),
 ])
-def test_parse_mnd_time(mnd_time, parsed):
-    assert parsed == parse_mnd_time(mnd_time)
+def test_parse_mnd_time(mnd_time, dt):
+    dt = datetime(*dt)
+    f = parse_mnd_time(mnd_time)
+    assert dt == f(dt.year)
 
 
 @pytest.mark.parametrize('y, m, n, d, day', [
@@ -170,6 +173,15 @@ def test_dth_day_of_week_n(y, m, n, d, day):
     assert dt.timetuple()[:3] == (y, m, day)
 
 
+@pytest.mark.parametrize('year, n, month, day', [
+    (2015, 59, 2, 28),
+    (2015, 60, 3, 1),
+    (2016, 59, 2, 28),
+    (2016, 60, 3, 1),
+])
+def test_julian_day(year, n, month, day):
+    assert datetime(year, month, day) == julian_day(year, n)
+
 @pytest.mark.parametrize('tz, year, dst_start, dst_end', [
     # New York
     ('EST5EDT,M3.2.0,M11.1.0', 2016,
@@ -180,6 +192,9 @@ def test_dth_day_of_week_n(y, m, n, d, day):
     # Exotic: Chatham, Pacific
     ('CHAST-12:45CHADT,M9.5.0/2:45,M4.1.0/3:45', 2016,
      datetime(2016, 9, 25, 2, 45), datetime(2016, 4, 3, 3, 45)),
+    # Exotic: Tehran, Iran
+    ('IRST-3:30IRDT,J80/0,J264/0', 2016,
+     datetime(2016, 3, 21, 0), datetime(2016, 9, 21))
 ])
 def test_posix_rules_transitions(tz, year, dst_start, dst_end):
     info = PosixRules(tz)

@@ -1,3 +1,4 @@
+from calendar import isleap
 from datetime import tzinfo as _tzinfo, timedelta, date, datetime
 from .tools import pairs, enfold
 import bisect
@@ -405,16 +406,32 @@ def parse_time(time_str):
 
 
 def parse_mnd_time(mnd_time):
-    if not mnd_time.startswith('M'):
-        raise ValueError("Expected a string starting with 'M'", mnd_time)
+    if not mnd_time.startswith(('M', 'J')):
+        raise ValueError("Expected a string starting with 'M' or 'J'", mnd_time)
     if '/' in mnd_time:
         mnd, t = mnd_time.split('/')
         t = parse_time(t)
     else:
         mnd = mnd_time
         t = timedelta(hours=2)
-    mnd = tuple(int(part) for part in mnd[1:].split('.'))
-    return mnd, t
+    args = tuple(int(part) for part in mnd[1:].split('.'))
+    if mnd[0] == 'M':
+        return lambda year: dth_day_of_week_n(year, *args) + t
+    else:
+        assert mnd[0] == 'J'
+        return lambda year: julian_day(year, *args) + t
+
+
+def julian_day(year, n):
+    """Return the Julian day n(1 <= n <= 365).
+
+    Leap days are not counted; that is, in all years -- including leap years --
+    February 28 is day 59 and March 1 is day 60. It is impossible to explicitly
+    refer to the occasional February 29.
+    """
+    if n > 59 and isleap(year):
+        n += 1
+    return datetime(year, 1, 1) + timedelta(n - 1)
 
 
 class PosixRules(tzinfo):
@@ -471,10 +488,8 @@ class PosixRules(tzinfo):
         return ZERO
 
     def transitions(self, year):
-        mnd, delta = self.dst_start
-        start = dth_day_of_week_n(year, *mnd) + delta
-        mnd, delta = self.dst_end
-        end = dth_day_of_week_n(year, *mnd) + delta
+        start = self.dst_start(year)
+        end = self.dst_end(year)
         return start, end
 
 
