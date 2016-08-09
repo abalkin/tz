@@ -21,7 +21,7 @@ CHAR_MAP = {
 
 
 def get(name):
-    return ZoneInfo.fromname(name)
+    return eval(name)
 
 
 def clean_name(area_id):
@@ -47,7 +47,7 @@ class Area:
             else:
                 tzid = '/'.join([name, loc])
                 info = ZoneInfo.fromname(tzid)
-                info.tzrepr = 'tz.' + clean_name(tzid)
+                info.tzrepr = clean_name(tzid)
                 setattr(self, loc.replace('-', ''), info)
         if '/' not in name:
             self.save()
@@ -81,3 +81,6 @@ Arctic = Area('Arctic')
 Pacific = Area('Pacific')
 Atlantic = Area('Atlantic')
 Indian = Area('Indian')
+
+# Let's not mess with ZoneInfo pickling until tz namespace is ready
+ZoneInfo.__reduce__ = ZoneInfo.make_reduce(get)

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, tzinfo
 
+import pickle
 import pytest
 
 import tz
@@ -34,3 +35,12 @@ def test_complete():
 ])
 def test_tz_repr(z):
     assert repr(eval(z)) == z
+
+
+@pytest.mark.parametrize('z', [
+    'tz.America.Argentina.Buenos_Aires',
+])
+def test_pickle(z):
+    info = eval(z)
+    s = pickle.dumps(info)
+    assert info is pickle.loads(s)

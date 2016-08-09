@@ -55,10 +55,19 @@ class ZoneInfo(tzinfo):
         self.ti = ti
         self.lt = self.invert(ut, ti)
 
+    @classmethod
+    def make_reduce(cls, get):
+        def __reduce__(self):
+            tzrepr = self.tzrepr
+            if tzrepr is None:
+                return tzinfo.__reduce__(self)
+            return get, (tzrepr, )
+        return __reduce__
+
     def __repr__(self):
         tzrepr = self.tzrepr
         if tzrepr is not None:
-            return tzrepr
+            return 'tz.' + tzrepr
         tzid = self.tzid
         cls = type(self)
         if tzid is not None:
