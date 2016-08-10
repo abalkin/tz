@@ -40,8 +40,27 @@ New packages
 The tz package
 --------------
 
+The :module:`tz` package serves as a top namespace for the :class:`tzinfo`
+objects.  After importing :module:`tz`, the users can access timezones using
+their dotted names::
+
+   >>> import tz
+   >>> tz.America.New_York
+   tz.America.New_York
+
+A dotted name of a timezone is obtained from its id by replacing '/' characters
+with dots ('.'), '-' characters with '_', and removing the dot characters (if
+any).
+
+
+
 The tzdata package
 ------------------
+
+.. function:: zones(area=None)
+.. function:: aliases(area=None)
+.. function:: get(tzid, start=datetime.min, end=None)
+
 
 
 Changes to the datetime module

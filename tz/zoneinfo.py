@@ -1,15 +1,15 @@
-from calendar import isleap
-from datetime import tzinfo as _tzinfo, timedelta, date, datetime
-
-from types import ModuleType
-
-from .tools import pairs, enfold
 import bisect
+import inspect
 import os
 import struct
 import sys
 from array import array
-import inspect
+from calendar import isleap
+from datetime import tzinfo as _tzinfo, timedelta, date, datetime
+from types import ModuleType
+
+from .tzfile import is_tzfile
+from .tools import pairs, enfold
 
 __all__ = ['ZoneInfo']
 
@@ -635,7 +635,3 @@ def dth_day_of_week_n(y, m, n, d):
     return dt
 
 
-def is_tzfile(p):
-    with open(p, 'rb') as o:
-        magic = o.read(4)
-    return magic == b'TZif'

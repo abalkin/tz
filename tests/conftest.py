@@ -11,7 +11,13 @@ def zoneinfo(tmpdir_factory):
     outpath = tmpdir.ensure('America', 'New_York')
     with outpath.open('bw') as outfile:
         base64.decode(infile, outfile)
+    with tmpdir.join('zone.tab').open('w') as f:
+        f.write(ZONE_TAB)
     return tmpdir
+
+ZONE_TAB = """\
+US	+404251-0740023	America/New_York	Eastern (most areas)
+"""
 
 # base64 -b 64 zoneinfo/America/New_York
 New_York = b"""\
