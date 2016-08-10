@@ -1,11 +1,15 @@
 from calendar import isleap
 from datetime import tzinfo as _tzinfo, timedelta, date, datetime
+
+from types import ModuleType
+
 from .tools import pairs, enfold
 import bisect
 import os
 import struct
 import sys
 from array import array
+import inspect
 
 __all__ = ['ZoneInfo']
 
@@ -409,6 +413,64 @@ class ZoneInfo(tzinfo):
         if os.path.exists(path):
             return path
         raise SystemError('Missing zone.tab')
+
+    def save_module(self, topdir):
+        pkgdir = topdir
+        parts = self.tzid.split('/')
+        for part in parts[:-1]:
+            pkgdir = os.path.join(pkgdir, part)
+            os.mkdir(pkgdir)
+            init = os.path.join('__init__.py')
+            with open(init, 'w') as f:
+                f.write('')
+        from . import template
+        modpath = os.path.join(pkgdir, parts[-1] + '.py')
+        with open(modpath, 'w') as f:
+            source = inspect.getsourcelines(template)[0]
+            for line in source:
+                if line.startswith('ut, ti = '):
+                    src = self.transitions_source()
+                    f.write(src)
+                else:
+                    f.write(line)
+
+    def observances(self):
+        """Return unique objects from the *ti* list."""
+        seen = {}
+        items = []
+        indices = []
+        u = 0  # unique observance count
+        for i, o in enumerate(self.ti):
+            p = id(o)
+            if p in seen:
+                indices.append(seen[p])
+            else:
+                seen[p] = u
+                items.append(o)
+                indices.append(u)
+                u += 1
+
+        return indices, items
+
+    def transitions_source(self):
+        indices, items = self.observances()
+        o = ''.join(("    %r,\n" % (i, )).replace('datetime.', '')
+                    for i in items)
+        t = ''.join("     (%d, O[%d]),\n" % (u, n)
+                    for u, n in zip(self.ut, indices))
+        return TRANSITIONS_TEMPLATE.format(o, t)
+
+TRANSITIONS_TEMPLATE = """\
+O = [
+{}]
+ut, ti = zip(
+{})
+ut = array('q', ut)
+"""
+
+
+class ZoneModule(ZoneInfo, ModuleType):
+    pass
 
 
 def parse_std_dst(std_dst):

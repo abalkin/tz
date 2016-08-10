@@ -245,3 +245,15 @@ def test_far_future(zoneinfo):
     far_winter = datetime(9999, 12, 1, tzinfo=z)
     assert far_summer.dst()
     assert not far_winter.dst()
+
+
+def test_save_module(zoneinfo, tmpdir, monkeypatch):
+    monkeypatch.syspath_prepend(tmpdir)
+    with zoneinfo.join('America', 'New_York').open('br') as f:
+        z = ZoneInfo.fromfile(f)
+        z.tzid = 'America/New_York'
+    z.save_module(tmpdir.strpath)
+    america = __import__('America.New_York')
+    w = america.New_York
+    assert w.ut == z.ut
+    assert w.ti == tuple(z.ti)
