@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 import pytest
 from tz import system_tzdata
 
+
 @pytest.fixture
 def fake_system(zoneinfo, monkeypatch):
     monkeypatch.setattr(system_tzdata, 'zoneinfo_dir', zoneinfo.strpath)
@@ -37,4 +38,3 @@ def test_system_tzdata_get(fake_system):
         (datetime(2037, 11, 1, 6, 0), 2),
     ]
     assert z.posix_string == 'EST5EDT,M3.2.0,M11.1.0'
-

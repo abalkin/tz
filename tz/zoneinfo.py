@@ -633,5 +633,3 @@ def dth_day_of_week_n(y, m, n, d):
         dt = datetime(y, m, 1)
         dt += timedelta((d - dt.weekday() - 1) % 7 + 7 * (n - 1))
     return dt
-
-

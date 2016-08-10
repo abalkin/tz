@@ -11,6 +11,7 @@ zoneinfo_dir = '/usr/share/zoneinfo'
 _zones = []
 _aliases = {}
 
+
 class ZoneData:
     source = 'system'
     observances = []
@@ -57,9 +58,11 @@ def aliases(area=None):
 
     return {a: t for a, t in _aliases.items() if a.startswith(area + '/')}
 
+
 SECOND = timedelta(0, 1)
 UNIX_EPOCH = datetime(1970, 1, 1)
 CREATION = (datetime(1, 1, 1) - UNIX_EPOCH) // SECOND
+
 
 def get(zone):
     path = os.path.join(zoneinfo_dir, zone)

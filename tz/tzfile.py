@@ -1,11 +1,8 @@
 import os
-from array import array
-
-import sys
-from collections import namedtuple
-from datetime import timedelta
-
 import struct
+import sys
+from array import array
+from collections import namedtuple
 
 
 def is_tzfile(p):
@@ -21,6 +18,7 @@ def _read_counts(fileobj):
         counts.byteswap()
     return counts
 
+
 TZFileData = namedtuple('TZFileData', [
     'version',
     'type_infos',
@@ -28,6 +26,7 @@ TZFileData = namedtuple('TZFileData', [
     'type_indices',
     'posix_string',
 ])
+
 
 def read(fileobj, version=None):
     """Read tz data from a binary file.
