@@ -6,6 +6,7 @@ Contents:
    :maxdepth: 2
 
    prior
+   pep-NNNN
 
 .. only:: html
 

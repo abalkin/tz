@@ -40,8 +40,8 @@ New packages
 The tz package
 --------------
 
-The :module:`tz` package serves as a top namespace for the :class:`tzinfo`
-objects.  After importing :module:`tz`, the users can access timezones using
+The :mod:`tz` package serves as a top namespace for the :class:`tzinfo`
+objects.  After importing :mod:`tz`, the users can access timezones using
 their dotted names::
 
    >>> import tz
@@ -58,9 +58,15 @@ The tzdata package
 ------------------
 
 .. function:: zones(area=None)
-.. function:: aliases(area=None)
-.. function:: get(tzid, start=datetime.min, end=None)
+   Returns a generator for the list of zones in the given area.  If the area
+   is not provided, all zones are generated.
 
+.. function:: aliases(area=None)
+   Returns a generator for the list of aliases in the given area.  The
+   aliases are returned as (name, target) pairs.
+
+.. function:: get(tzid)
+   Returns the data necessary to instantiate ``tzinfo(tzid)``.
 
 
 Changes to the datetime module
@@ -72,6 +78,7 @@ The tzinfo factory
 The ``datetime.tzinfo`` constructor will become a factory method that
 takes a text string in formats acceptable for the TZ environment variable.
 For example::
+
    >>> import datetime
    >>> datetime.tzinfo('America/New_York')
    tz.America.New_York
