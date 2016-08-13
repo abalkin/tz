@@ -50,7 +50,8 @@ class Area:
         if item in subareas:
             attr = Area(name)
         elif item in zones:
-            attr = tzdata.get(name)
+            data = tzdata.get(name)
+            attr = ZoneInfo.fromdata(data.types, data.transitions)
         else:
             raise AttributeError(item)
         setattr(self, item, attr)

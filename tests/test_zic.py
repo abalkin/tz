@@ -30,7 +30,7 @@ ny_python = """\
 class America:
     class New_York(Zone):
         name = 'New_York'
-        observances = [
+        types = [
             Observance(gmtoff=-timedelta(hours=4, minutes=56, seconds=2),
                        rules=None,
                        format='LMT',

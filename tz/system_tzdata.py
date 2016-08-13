@@ -14,7 +14,7 @@ _aliases = {}
 
 class ZoneData:
     source = 'system'
-    observances = []
+    types = []
     transitions = []
     posix_string = None
 
@@ -69,7 +69,7 @@ def get(zone):
     with open(path, 'br') as f:
         raw_data = tzfile.read(f)
     data = ZoneData()
-    data.observances = [
+    data.types = [
         (timedelta(seconds=gmtoff),
          timedelta(hours=is_std),
          abbr) for gmtoff, is_std, abbr in raw_data.type_infos]

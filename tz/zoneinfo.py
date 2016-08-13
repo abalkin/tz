@@ -16,7 +16,7 @@ __all__ = ['ZoneInfo']
 ZERO = timedelta(0)
 HOUR = timedelta(hours=1)
 SEC = timedelta(0, 1)
-
+EPOCH = datetime(1970, 1, 1)
 
 class tzinfo(_tzinfo):
     cache = {}
@@ -103,6 +103,18 @@ class ZoneInfo(tzinfo):
         if sys.byteorder != 'big':
             counts.byteswap()
         return counts
+
+    @classmethod
+    def fromdata(cls, types, transitions, posix_string=None):
+        ut = array('q', [])
+        ti = []
+        for t, i in transitions:
+            ut.append((t - EPOCH) // SEC)
+            ti.append(types[i])
+        self = cls(ut, ti)
+        if posix_string is not None:
+            self.posix_rules = PosixRules(posix_string)
+        return self
 
     @classmethod
     def fromfile(cls, fileobj, version=None):
