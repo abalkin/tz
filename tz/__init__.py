@@ -39,6 +39,10 @@ class Area:
         self.subareas = None
         self.zones = None
 
+    def __repr__(self):
+        cls = type(self)
+        return "%s.%s(%r)" % (cls.__module__, cls.__name__, self.name)
+
     def __dir__(self):
         zones, subareas = self.get_dir()
 
@@ -46,29 +50,35 @@ class Area:
 
     def __getattr__(self, item):
         zones, subareas = self.get_dir()
-        name = self.name + '/' + item
         if item in subareas:
+            name = self.name + '/' + subareas[item]
             attr = Area(name)
         elif item in zones:
-            data = tzdata.get(name)
-            attr = ZoneInfo.fromdata(data.types, data.transitions)
+            name = self.name + '/' + zones[item]
+            try:
+                attr = tzinfo.cache[name]
+            except KeyError:
+                data = tzdata.get(name)
+                attr = ZoneInfo.fromdata(data.types, data.transitions)
+                attr.tzrepr = clean_name(name)
+                tzinfo.cache[name] = attr
         else:
             raise AttributeError(item)
         setattr(self, item, attr)
         return attr
 
     def get_dir(self):
-        subareas = set()
-        zones = set()
+        subareas = {}
+        zones = {}
         if self.zones is None:
             n = len(self.name) + 1
             for name in tzdata.zones(self.name):
                 assert name[:n-1] == self.name
                 i = name.find('/', n + 1)
                 if i == -1:
-                    zones.add(name[n:])
+                    zones[clean_name(name[n:])] = name[n:]
                 else:
-                    subareas.add(name[n:i])
+                    subareas[clean_name(name[n:i])] = name[n:i]
             self.subareas = subareas
             self.zones = zones
         else:

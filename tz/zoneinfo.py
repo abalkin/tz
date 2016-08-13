@@ -39,6 +39,7 @@ class ZoneInfo(tzinfo):
 
     version = 0
     posix_rules = None
+    posix_after = datetime.max
     area_lookup = None
     country_lookup = None
 
@@ -190,9 +191,7 @@ class ZoneInfo(tzinfo):
         if posix_rules:
             self.posix_rules = PosixRules(posix_rules.decode('ascii'))
             last_transition = datetime.utcfromtimestamp(ut[-1])
-            self.posix_after = last_transition.replace(tzinfo=self)
-        else:
-            self.posix_after = datetime.max.replace(tzinfo=self)
+            self.posix_after = last_transition
         return self
 
     @classmethod
@@ -212,7 +211,7 @@ class ZoneInfo(tzinfo):
             raise TypeError("fromutc() requires a datetime argument")
         if dt.tzinfo is not self:
             raise ValueError("dt.tzinfo is not self")
-        if dt > self.posix_after:
+        if dt.replace(tzinfo=None) > self.posix_after:
             return self.posix_rules.fromutc(dt)
         timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400 +
                      dt.hour * 3600 + dt.minute * 60 + dt.second)
@@ -243,12 +242,12 @@ class ZoneInfo(tzinfo):
         return self.ti[max(0, idx - 1)][i]
 
     def utcoffset(self, dt):
-        if dt > self.posix_after:
+        if dt.replace(tzinfo=None) > self.posix_after:
             return self.posix_rules.utcoffset(dt)
         return self._find_ti(dt, 0)
 
     def dst(self, dt):
-        if dt > self.posix_after:
+        if dt.replace(tzinfo=None) > self.posix_after:
             return self.posix_rules.dst(dt)
         isdst = self._find_ti(dt, 1)
         # XXX: We cannot accurately determine the "save" value,

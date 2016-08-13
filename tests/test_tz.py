@@ -25,7 +25,7 @@ def test_complete():
             name = line.split()[2]
             locations.append(name)
     for loc in locations:
-        info = eval('tz.' + loc.replace('/', '.').replace('-', ''))
+        info = eval('tz.' + loc.replace('/', '.').replace('-', '_'))
         assert isinstance(info, tzinfo)
 
 
