@@ -4,6 +4,11 @@ import pickle
 from . import metadata
 from .zoneinfo import tzinfo, ZoneInfo
 
+try:
+    import tzdata
+except ImportError:
+    from . import system_tzdata as tzdata
+
 __all__ = ['America', 'Europe', 'Australia', 'Antarctica',  'Asia', 'Africa',
            'Arctic', 'Pacific', 'Atlantic', 'Indian', 'tzinfo']
 
@@ -29,48 +34,46 @@ def clean_name(area_id):
 
 
 class Area:
-    def __new__(cls, name=None):
-        if name is None:
-            return object.__new__(cls)
-        if '/' not in name:
-            try:
-                self = cls.load(name)
-                tzinfo.cache.update(self.all)
-                return self
-            except (FileNotFoundError, EOFError):
-                pass
-        self = object.__new__(cls)
+    def __init__(self, name):
         self.name = name
-        self.all = {}
-        for loc in ZoneInfo.list_area(name):
-            if loc.endswith('/'):
-                loc = loc[:-1]
-                area = Area('/'.join([name, loc]))
-                setattr(self, loc.replace('-', ''), area)
-            else:
-                tzid = '/'.join([name, loc])
-                info = ZoneInfo.fromname(tzid)
-                info.tzrepr = clean_name(tzid)
-                setattr(self, loc.replace('-', ''), info)
-                self.all[tzid] = tzinfo.cache[tzid] = info
-        if '/' not in name:
-            self.save()
-        return self
+        self.subareas = None
+        self.zones = None
 
-    def __repr__(self):
-        cls = type(self)
-        return "%s.%s(%r)" % (cls.__module__, cls.__name__, self.name)
+    def __dir__(self):
+        zones, subareas = self.get_dir()
 
-    @classmethod
-    def load(cls, name):
-        path = os.path.join(PKG_DIR, name + '.pkl')
-        with open(path, 'br') as f:
-            return pickle.load(f)
+        return sorted(zones) + sorted(subareas)
 
-    def save(self):
-        path = os.path.join(PKG_DIR, self.name + '.pkl')
-        with open(path, 'bw') as f:
-            return pickle.dump(self, f, 4)
+    def __getattr__(self, item):
+        zones, subareas = self.get_dir()
+        name = self.name + '/' + item
+        if item in subareas:
+            attr = Area(name)
+        elif item in zones:
+            attr = tzdata.get(name)
+        else:
+            raise AttributeError(item)
+        setattr(self, item, attr)
+        return attr
+
+    def get_dir(self):
+        subareas = set()
+        zones = set()
+        if self.zones is None:
+            n = len(self.name) + 1
+            for name in tzdata.zones(self.name):
+                assert name[:n-1] == self.name
+                i = name.find('/', n + 1)
+                if i == -1:
+                    zones.add(name[n:])
+                else:
+                    subareas.add(name[n:i])
+            self.subareas = subareas
+            self.zones = zones
+        else:
+            zones = self.zones
+            subareas = self.subareas
+        return zones, subareas
 
 # Continents
 America = Area('America')
