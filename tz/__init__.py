@@ -1,6 +1,5 @@
 """PEP 495 compliant tzinfo implementation."""
 import os
-import pickle
 from . import metadata
 from .zoneinfo import tzinfo, ZoneInfo
 
@@ -25,12 +24,17 @@ CHAR_MAP = {
 }
 
 
-def get(name):
+def clean_name(area_id):
+    return area_id.translate(CHAR_MAP)
+
+
+def get_instance(_, name):
     return eval(name)
 
 
-def clean_name(area_id):
-    return area_id.translate(CHAR_MAP)
+tzinfo.get_instance = classmethod(get_instance)
+
+get = tzinfo.get_instance
 
 
 class Area:
@@ -59,7 +63,10 @@ class Area:
                 attr = tzinfo.cache[name]
             except KeyError:
                 data = tzdata.get(name)
-                attr = ZoneInfo.fromdata(data.types, data.transitions)
+                attr = ZoneInfo.fromdata(data.types,
+                                         data.times,
+                                         data.rules)
+                attr.tzid = name
                 attr.tzrepr = clean_name(name)
                 tzinfo.cache[name] = attr
         else:

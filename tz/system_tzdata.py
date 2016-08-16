@@ -15,8 +15,8 @@ _aliases = {}
 class ZoneData:
     source = 'system'
     types = []
-    transitions = []
-    posix_string = None
+    times = []
+    rules = None
 
 
 def zones(area=None):
@@ -73,8 +73,8 @@ def get(zone):
         (timedelta(seconds=gmtoff),
          timedelta(hours=is_std),
          abbr) for gmtoff, is_std, abbr in raw_data.type_infos]
-    data.transitions = [
+    data.times = [
         (UNIX_EPOCH + timedelta(seconds=max(CREATION, t)), i)
         for t, i in zip(raw_data.times, raw_data.type_indices)]
-    data.posix_string = raw_data.posix_string
+    data.rules = raw_data.posix_string
     return data

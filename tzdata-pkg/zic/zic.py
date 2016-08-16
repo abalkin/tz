@@ -5,11 +5,16 @@ import sys
 from datetime import datetime
 
 HEADER = """\
-from tzdata.classes import *
+from zic.classes import *
 from datetime import *
 
 
 """
+
+RAW_FILES = [
+    'africa', 'antarctica', 'asia', 'australasia',
+    'europe', 'northamerica', 'southamerica'
+]
 
 
 def lines(input):
@@ -200,4 +205,8 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: zic infile [outfile]")
         sys.exit(1)
-    compile(*sys.argv[1:])
+    if sys.argv[1] == '--all':
+        for f in RAW_FILES:
+            compile('raw/' + f, f + '.py')
+    else:
+        compile(*sys.argv[1:])

@@ -18,6 +18,7 @@ HOUR = timedelta(hours=1)
 SEC = timedelta(0, 1)
 EPOCH = datetime(1970, 1, 1)
 
+
 class tzinfo(_tzinfo):
     cache = {}
 
@@ -31,7 +32,11 @@ class tzinfo(_tzinfo):
         try:
             return PosixRules(tz)
         except ValueError:
-            return ZoneInfo.fromname(tz)
+            return cls.m_get(tz)
+
+    @classmethod
+    def m_get(cls, tz):
+        raise NotImplemented
 
 
 class ZoneInfo(tzinfo):
@@ -82,7 +87,7 @@ class ZoneInfo(tzinfo):
         cls = type(self)
         if tzid is not None:
             return "%s.%s(%r)" % (cls.__module__, cls.__name__, tzid)
-        return "<%s.%s object at 0x%x: %d transitions>" % (
+        return "<%s.%s object at 0x%x: %d times>" % (
             cls.__module__, cls.__name__, id(self), len(self.ut))
 
     @staticmethod
@@ -106,15 +111,15 @@ class ZoneInfo(tzinfo):
         return counts
 
     @classmethod
-    def fromdata(cls, types, transitions, posix_string=None):
+    def fromdata(cls, types, times, rules=None):
         ut = array('q', [])
         ti = []
-        for t, i in transitions:
+        for t, i in times:
             ut.append((t - EPOCH) // SEC)
             ti.append(types[i])
         self = cls(ut, ti)
-        if posix_string is not None:
-            self.posix_rules = PosixRules(posix_string)
+        if rules is not None:
+            self.posix_rules = PosixRules(rules)
         return self
 
     @classmethod
@@ -359,7 +364,7 @@ class ZoneInfo(tzinfo):
                     zeros_count += 1
         trans_counts = (gap_count, fold_count, zeros_count)
         print("Number of zones:       %5d" % count)
-        print("Number of transitions: %5d ="
+        print("Number of times: %5d ="
               " %d (gaps) + %d (folds) + %d (zeros)" %
               ((sum(trans_counts),) + trans_counts))
         print("Min gap:         %16s at %s in %s" %
