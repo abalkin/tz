@@ -34,14 +34,8 @@ class tzinfo(_tzinfo):
 
 
 class ZoneInfo(tzinfo):
-    zoneroot = '/usr/share/zoneinfo'
-
-    version = 0
     posix_rules = None
     posix_after = datetime.max
-    area_lookup = None
-    country_lookup = None
-
     tzid = None     # The canonical zone name, e.g. 'America/New_York'
     tzrepr = None   # If set, returned by __repr__.
 
