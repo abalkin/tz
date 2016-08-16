@@ -58,15 +58,42 @@ The tzdata package
 ------------------
 
 .. function:: zones(area=None)
-   Returns a generator for the list of zones in the given area.  If the area
+
+   Returns an iterable over the list of zones in the given area.  If the area
    is not provided, all zones are generated.
 
+.. function:: areas(area=None)
+
+   Returns an iterable over the list of sub-areas in the given area.  If the
+   area is not provided, iterable over the list of top areas is returned.
+
 .. function:: aliases(area=None)
-   Returns a generator for the list of aliases in the given area.  The
+
+   Returns a iterable over the list of aliases in the given area.  The
    aliases are returned as (name, target) pairs.
 
 .. function:: get(tzid)
-   Returns the data necessary to instantiate ``tzinfo(tzid)``.
+
+   Returns the data necessary to instantiate ``tzinfo(tzid)``.  The returned
+   object should have the following attributes:
+
+   .. attribute:: types
+
+   A list of local time types.  Each item is a tuple
+   ``(utcoffset, dstoffset, abbr)``, where *utcoffset* and *dstoffset* are
+   :class:`timedelta` instances representing the UTC offset and DST
+   correction (included in the UTC offset) and *abbr* is a string containing
+   the timezone abbreviation.
+
+   .. attribute:: times
+
+   A list (or an iterable) of ``(transition_time, type_index)`` tuples, where
+   the *transition_time* is a :class:`datetime` instance representing the wall
+   time at which the transition to the new local time type takes place and
+   *type_index* is an index into the :attr:`types` array.
+
+   .. attribute:: rules
+
 
 
 Changes to the datetime module
