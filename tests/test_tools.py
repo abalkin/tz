@@ -1,5 +1,6 @@
 import pytest
-from tz.tools import pairs
+from datetime import datetime
+from tz.tools import pairs, enfold
 
 
 @pytest.mark.parametrize('seq, out', [
@@ -11,3 +12,11 @@ from tz.tools import pairs
 def test_pairs(seq, out):
     p = pairs(seq)
     assert out == list(p)
+
+
+def test_enfold():
+    d0 = datetime(1, 1, 1)
+    d1 = enfold(d0, fold=1)
+    assert d1.fold == 1
+    d2 = enfold(d1, fold=0)
+    assert getattr(d2, 'fold', 0) == 0

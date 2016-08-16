@@ -4,7 +4,6 @@ import pickle
 import pytest
 
 import tz
-from tz.zoneinfo import ZoneInfo
 
 
 def test_basic_usage():
@@ -16,14 +15,7 @@ def test_basic_usage():
 
 
 def test_complete():
-    locations = []
-    with open(ZoneInfo.zonetab_path()) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            name = line.split()[2]
-            locations.append(name)
+    locations = tz.tzdata.zones()
     for loc in locations:
         info = eval('tz.' + loc.replace('/', '.').replace('-', '_'))
         assert isinstance(info, tzinfo)

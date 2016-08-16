@@ -6,16 +6,34 @@ from array import array
 import pickle
 import pytest
 
+import tz
+from tz.tools import pairs
 from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time, \
     dth_day_of_week_n, PosixRules, HOUR, ZERO, parse_time, julian_day
 
 
-def test_enfold():
-    d0 = datetime(1, 1, 1)
-    d1 = enfold(d0, fold=1)
-    assert d1.fold == 1
-    d2 = enfold(d1, fold=0)
-    assert getattr(d2, 'fold', 0) == 0
+def tz_shifts(z):
+    for (_, prev_info), (time, info) in pairs(zip(z.ut, z.ti)):
+        shift = info[0] - prev_info[0]
+        yield datetime.utcfromtimestamp(time), shift
+
+
+def tz_folds(z):
+    for time, shift in tz_shifts(z):
+        if shift < ZERO:
+            yield time, -shift
+
+
+def tz_gaps(z):
+    for time, shift in tz_shifts(z):
+        if shift > ZERO:
+            yield time, shift
+
+
+def tz_zeros(z):
+    for time, shift in tz_shifts(z):
+        if not shift:
+            yield time
 
 
 class ZoneInfoTest(unittest.TestCase):
@@ -25,7 +43,8 @@ class ZoneInfoTest(unittest.TestCase):
     def setUp(self):
         if sys.platform == "win32":
             self.skipTest("Skipping zoneinfo tests on Windows")
-        self.tz = ZoneInfo.fromname(self.zonename, self.version)
+        data = tz.tzdata.get(self.zonename)
+        self.tz = ZoneInfo.fromdata(data.types, data.times, data.rules)
 
     def assertEquivDatetimes(self, a, b):
         self.assertEqual((a.replace(tzinfo=None), getattr(a, 'fold', 0),
@@ -35,7 +54,7 @@ class ZoneInfoTest(unittest.TestCase):
 
     def test_folds(self):
         tz = self.tz
-        for dt, shift in tz.folds():
+        for dt, shift in tz_folds(tz):
             for x in [0 * shift, 0.5 * shift, shift - timedelta.resolution]:
                 udt = dt + x
                 ldt = tz.fromutc(udt.replace(tzinfo=tz))
@@ -56,7 +75,7 @@ class ZoneInfoTest(unittest.TestCase):
 
     def test_gaps(self):
         tz = self.tz
-        for dt, shift in tz.gaps():
+        for dt, shift in tz_gaps(tz):
             for x in [0 * shift, 0.5 * shift, shift - timedelta.resolution]:
                 udt = dt + x
                 udt = udt.replace(tzinfo=tz)
@@ -80,15 +99,11 @@ class ZoneInfoTest(unittest.TestCase):
 
     def test_zeros(self):
         tz = self.tz
-        transitions = list(tz.transitions())
-        folds = list(tz.folds())
-        gaps = list(tz.gaps())
-        zeros = list(self.tz.zeros())
-        self.assertEqual(len(transitions), len(folds) + len(gaps) + len(zeros))
-
-    def test_zonenames(self):
-        names = list(self.tz.zonenames())
-        self.assertGreater(len(names), 0)
+        shifts = list(tz_shifts(tz))
+        folds = list(tz_folds(tz))
+        gaps = list(tz_gaps(tz))
+        zeros = list(tz_zeros(tz))
+        self.assertEqual(len(shifts), len(folds) + len(gaps) + len(zeros))
 
     def test_fromutc_errors(self):
         tz = self.tz
@@ -97,31 +112,6 @@ class ZoneInfoTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             dt = datetime(1, 1, 1)
             tz.fromutc(dt)
-
-
-class ZoneInfoV0Test(ZoneInfoTest):
-    version = 0
-
-
-def test_invalid_zoneinfo(tmpdir):
-    empty = tmpdir.ensure('empty')
-    with pytest.raises(ValueError):
-        with empty.open() as f:
-            ZoneInfo.fromfile(f)
-
-
-def test_zoneinfo_stats(capsys):
-    ZoneInfo.stats()
-    out, err = capsys.readouterr()
-    assert out
-    assert not err
-
-
-def test_zoneinfo_nondst_folds(capsys):
-    ZoneInfo.print_all_nondst_folds()
-    out, err = capsys.readouterr()
-    assert out
-    assert not err
 
 
 def test_pickle():
@@ -233,27 +223,14 @@ def test_posix_rules_transitions(tz, year, dst_start, dst_end):
 
 
 def test_repr():
-    z = ZoneInfo.fromname('America/New_York')
+    z = ZoneInfo.fromdata([], [])
+    z.tzid = 'America/New_York'
     assert repr(z) == "tz.zoneinfo.ZoneInfo('America/New_York')"
 
 
-def test_far_future(zoneinfo):
-    with zoneinfo.join('America', 'New_York').open('br') as f:
-        z = ZoneInfo.fromfile(f)
-    assert z.version == 2
+def test_far_future():
+    z = ZoneInfo.fromdata([], [], 'EST5EDT,M3.2.0,M11.1.0')
     far_summer = datetime(9999, 6, 1, tzinfo=z)
     far_winter = datetime(9999, 12, 1, tzinfo=z)
     assert far_summer.dst()
     assert not far_winter.dst()
-
-
-def test_save_module(zoneinfo, tmpdir, monkeypatch):
-    monkeypatch.syspath_prepend(tmpdir)
-    with zoneinfo.join('America', 'New_York').open('br') as f:
-        z = ZoneInfo.fromfile(f)
-        z.tzid = 'America/New_York'
-    z.save_module(tmpdir.strpath)
-    america = __import__('America.New_York')
-    w = america.New_York
-    assert w.ut == z.ut
-    assert w.ti == tuple(z.ti)

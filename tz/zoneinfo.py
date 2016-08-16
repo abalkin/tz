@@ -1,15 +1,9 @@
 import bisect
-import inspect
-import os
-import struct
-import sys
 from array import array
 from calendar import isleap
 from datetime import tzinfo as _tzinfo, timedelta, date, datetime
-from types import ModuleType
 
-from .tzfile import is_tzfile
-from .tools import pairs, enfold
+from .tools import enfold
 
 __all__ = ['ZoneInfo']
 
@@ -68,7 +62,10 @@ class ZoneInfo(tzinfo):
         super(ZoneInfo, self).__init__()
         self.ut = ut
         self.ti = ti
-        self.lt = self.invert(ut, ti)
+        if ut:
+            self.lt = self.invert(ut, ti)
+        else:
+            self.posix_after = datetime.min
 
     @classmethod
     def make_reduce(cls, get):
@@ -103,14 +100,6 @@ class ZoneInfo(tzinfo):
         return lt
 
     @classmethod
-    def _read_counts(cls, fileobj):
-        counts = array('i')
-        counts.fromfile(fileobj, 6)
-        if sys.byteorder != 'big':
-            counts.byteswap()
-        return counts
-
-    @classmethod
     def fromdata(cls, types, times, rules=None):
         ut = array('q', [])
         ti = []
@@ -120,91 +109,6 @@ class ZoneInfo(tzinfo):
         self = cls(ut, ti)
         if rules is not None:
             self.posix_rules = PosixRules(rules)
-        return self
-
-    @classmethod
-    def fromfile(cls, fileobj, version=None):
-        magic = fileobj.read(5)
-        if magic[:4] != b"TZif":
-            raise ValueError("not a zoneinfo file")
-        if version is None:
-            version = int(magic[4:]) if magic[4] else 0
-        fileobj.seek(20)
-        # Read the counts:
-        # [0] - The number of UT/local indicators stored in the file.
-        # [1] - The number of standard/wall indicators stored in the file.
-        # [2] - The number of leap seconds for which data entries are stored
-        #       in the file.
-        # [3] - The number of transition times for which data entries are
-        #       stored in the file.
-        # [4] - The number of local time types for which data entries are
-        #       stored in the file (must not be zero).
-        # [5] - The number of characters of time zone abbreviation strings
-        #  stored in the file.
-
-        (ttisgmtcnt, ttisstdcnt, leapcnt,
-         timecnt, typecnt, charcnt) = cls._read_counts(fileobj)
-        if version >= 2:
-            # Skip to the counts in the second header.
-            data_size = (5 * timecnt +
-                         6 * typecnt +
-                         charcnt +
-                         8 * leapcnt +
-                         ttisstdcnt +
-                         ttisgmtcnt)
-            fileobj.seek(data_size + 20, os.SEEK_CUR)
-            # Re-read the counts.
-            (ttisgmtcnt, ttisstdcnt, leapcnt,
-             timecnt, typecnt, charcnt) = cls._read_counts(fileobj)
-            ttfmt = 'q'
-        else:
-            ttfmt = 'i'
-
-        ut = array(ttfmt)
-        ut.fromfile(fileobj, timecnt)
-        if sys.byteorder != 'big':
-            ut.byteswap()
-
-        type_indices = array('B')
-        type_indices.fromfile(fileobj, timecnt)
-
-        # Read local time types.
-        ttis = []
-        for i in range(typecnt):
-            ttis.append(struct.unpack(">iBB", fileobj.read(6)))
-
-        abbrs = fileobj.read(charcnt)
-
-        if version > 0:
-            # Skip to POSIX TZ string
-            fileobj.seek(12 * leapcnt + ttisstdcnt + ttisgmtcnt, os.SEEK_CUR)
-            posix_rules = fileobj.read().strip()
-        else:
-            posix_rules = b''
-
-        # Convert ttis
-        for i, (gmtoff, isdst, abbrind) in enumerate(ttis):
-            abbr = abbrs[abbrind:abbrs.find(0, abbrind)].decode()
-            ttis[i] = (timedelta(0, gmtoff), isdst, abbr)
-
-        ti = [None] * len(ut)
-        for i, idx in enumerate(type_indices):
-            ti[i] = ttis[idx]
-
-        self = cls(ut, ti)
-        self.version = version
-        if posix_rules:
-            self.posix_rules = PosixRules(posix_rules.decode('ascii'))
-            last_transition = datetime.utcfromtimestamp(ut[-1])
-            self.posix_after = last_transition
-        return self
-
-    @classmethod
-    def fromname(cls, name, version=None):
-        path = os.path.join(cls.zoneroot, name)
-        with open(path, 'rb') as f:
-            self = cls.fromfile(f, version)
-        self.tzid = name
         return self
 
     EPOCHORDINAL = date(1970, 1, 1).toordinal()
@@ -263,230 +167,6 @@ class ZoneInfo(tzinfo):
 
     def tzname(self, dt):
         return self._find_ti(dt, 2)
-
-    @classmethod
-    def read_zone_file(cls):
-        path = os.path.join(cls.zoneroot, 'zone.tab')
-        try:
-            f = open(path)
-        except OSError:
-            return
-        cls.country_lookup = {}
-        cls.area_lookup = {}
-        with f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                country_code, coordinates, tz = line.split('\t', 4)[:3]
-                cls.country_lookup.setdefault(country_code, []
-                                              ).append((coordinates, tz))
-                area, location = tz.rsplit('/', 1)
-                cls.area_lookup.setdefault(area, set()).add(location)
-                while '/' in area:
-                    area, subarea = area.rsplit('/', 1)
-                    cls.area_lookup.setdefault(area, set()).add(subarea + '/')
-
-    @classmethod
-    def list_area(cls, area):
-        cls.read_zone_file()
-        if cls.area_lookup is not None:
-            for name in cls.area_lookup[area]:
-                    yield name
-            return
-        # If 'zone.tab' file is not present - walk the tzinfo tree.
-        path = os.path.join(cls.zoneroot, area)
-        for name in os.listdir(path):
-            p = os.path.join(path, name)
-            if os.path.isdir(p):
-                yield name + '/'
-            elif is_tzfile(p):
-                yield name
-
-    @classmethod
-    def zonenames(cls, zonedir=None):
-        if zonedir is None:
-            zonedir = cls.zoneroot
-        elif not zonedir.startswith('/'):
-            zonedir = os.path.join(cls.zoneroot, zonedir)
-        for root, _, files in os.walk(zonedir):
-            for f in files:
-                p = os.path.join(root, f)
-                if is_tzfile(p):
-                    yield p[len(zonedir) + 1:]
-
-    @classmethod
-    def stats(cls, start_year=1):
-        count = gap_count = fold_count = zeros_count = 0
-        min_gap = min_fold = timedelta.max
-        max_gap = max_fold = ZERO
-        min_gap_datetime = max_gap_datetime = datetime.min
-        min_gap_zone = max_gap_zone = None
-        min_fold_datetime = max_fold_datetime = datetime.min
-        min_fold_zone = max_fold_zone = None
-        # Starting from 1970 eliminates a lot of noise
-        stats_since = datetime(start_year, 1, 1)
-        errors = []
-        for zonename in cls.zonenames():
-            try:
-                tz = cls.fromname(zonename)
-            except ValueError as e:
-                errors.append((zonename, e))
-                continue
-            count += 1
-            for dt, shift in tz.transitions():
-                if dt < stats_since:
-                    continue
-                if shift > ZERO:
-                    gap_count += 1
-                    if (shift, dt) > (max_gap, max_gap_datetime):
-                        max_gap = shift
-                        max_gap_zone = zonename
-                        max_gap_datetime = dt
-                    if (shift, datetime.max - dt) < (min_gap, datetime.max -
-                                                     min_gap_datetime):
-                        min_gap = shift
-                        min_gap_zone = zonename
-                        min_gap_datetime = dt
-                elif shift < ZERO:
-                    fold_count += 1
-                    shift = -shift
-                    if (shift, dt) > (max_fold, max_fold_datetime):
-                        max_fold = shift
-                        max_fold_zone = zonename
-                        max_fold_datetime = dt
-                    if (shift, datetime.max - dt) < (min_fold, datetime.max -
-                                                     min_fold_datetime):
-                        min_fold = shift
-                        min_fold_zone = zonename
-                        min_fold_datetime = dt
-                else:
-                    zeros_count += 1
-        trans_counts = (gap_count, fold_count, zeros_count)
-        print("Number of zones:       %5d" % count)
-        print("Number of times: %5d ="
-              " %d (gaps) + %d (folds) + %d (zeros)" %
-              ((sum(trans_counts),) + trans_counts))
-        print("Min gap:         %16s at %s in %s" %
-              (min_gap, min_gap_datetime, min_gap_zone))
-        print("Max gap:         %16s at %s in %s" %
-              (max_gap, max_gap_datetime, max_gap_zone))
-        print("Min fold:        %16s at %s in %s" %
-              (min_fold, min_fold_datetime, min_fold_zone))
-        print("Max fold:        %16s at %s in %s" %
-              (max_fold, max_fold_datetime, max_fold_zone))
-        for name, e in errors:
-            print("ERROR in %s: %s" % (name, e))
-        if errors:
-            raise errors[0][1]
-
-    def transitions(self):
-        for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
-            shift = ti[0] - prev_ti[0]
-            yield datetime.utcfromtimestamp(max(t, -62135596800)), shift
-
-    def nondst_folds(self):
-        """Find all folds with the same value of isdst
-           on both sides of the transition."""
-        for (_, prev_ti), (t, ti) in pairs(zip(self.ut, self.ti)):
-            shift = ti[0] - prev_ti[0]
-            if shift < ZERO and ti[1] == prev_ti[1]:
-                yield datetime.utcfromtimestamp(t), -shift, prev_ti[2], ti[2]
-
-    @classmethod
-    def print_all_nondst_folds(cls, same_abbr=False, start_year=1):
-        count = 0
-        for zonename in cls.zonenames():
-            tz = cls.fromname(zonename)
-            for dt, shift, prev_abbr, abbr in tz.nondst_folds():
-                if dt.year < start_year or same_abbr and prev_abbr != abbr:
-                    continue
-                count += 1
-                print("%3d) %-30s %s %10s %5s -> %s" %
-                      (count, zonename, dt, shift, prev_abbr, abbr))
-
-    def folds(self):
-        for t, shift in self.transitions():
-            if shift < ZERO:
-                yield t, -shift
-
-    def gaps(self):
-        for t, shift in self.transitions():
-            if shift > ZERO:
-                yield t, shift
-
-    def zeros(self):
-        for t, shift in self.transitions():
-            if not shift:
-                yield t
-
-    @classmethod
-    def zonetab_path(cls):
-        path = os.path.join(cls.zoneroot, 'zone1970.tab')
-        if os.path.exists(path):
-            return path
-        path = os.path.join(cls.zoneroot, 'zone.tab')
-        if os.path.exists(path):
-            return path
-        raise SystemError('Missing zone.tab')
-
-    def save_module(self, topdir):
-        pkgdir = topdir
-        parts = self.tzid.split('/')
-        for part in parts[:-1]:
-            pkgdir = os.path.join(pkgdir, part)
-            os.mkdir(pkgdir)
-            init = os.path.join('__init__.py')
-            with open(init, 'w') as f:
-                f.write('')
-        from . import template
-        modpath = os.path.join(pkgdir, parts[-1] + '.py')
-        with open(modpath, 'w') as f:
-            source = inspect.getsourcelines(template)[0]
-            for line in source:
-                if line.startswith('ut, ti = '):
-                    src = self.transitions_source()
-                    f.write(src)
-                else:
-                    f.write(line)
-
-    def observances(self):
-        """Return unique objects from the *ti* list."""
-        seen = {}
-        items = []
-        indices = []
-        u = 0  # unique observance count
-        for i, o in enumerate(self.ti):
-            p = id(o)
-            if p in seen:
-                indices.append(seen[p])
-            else:
-                seen[p] = u
-                items.append(o)
-                indices.append(u)
-                u += 1
-
-        return indices, items
-
-    def transitions_source(self):
-        indices, items = self.observances()
-        o = ''.join(("    %r,\n" % (i, )).replace('datetime.', '')
-                    for i in items)
-        t = ''.join("     (%d, O[%d]),\n" % (u, n)
-                    for u, n in zip(self.ut, indices))
-        return TRANSITIONS_TEMPLATE.format(o, t)
-
-TRANSITIONS_TEMPLATE = """\
-O = [
-{}]
-ut, ti = zip(
-{})
-ut = array('q', ut)
-"""
-
-
-class ZoneModule(ZoneInfo, ModuleType):
-    pass
 
 
 def parse_std_dst(std_dst):
