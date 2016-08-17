@@ -83,22 +83,22 @@ class ZoneInfo(tzinfo):
 
     @staticmethod
     def invert(ut, ti):
-        lt = (ut.__copy__(), ut.__copy__())
+        lt = (ut[:], ut[:])
         if ut:
-            offset = ti[0][0] // SEC
-            lt[0][0] = max(-2 ** 31, lt[0][0] + offset)
-            lt[1][0] = max(-2 ** 31, lt[1][0] + offset)
+            offset = ti[0][0]
+            lt[0][0] = max(datetime.min, lt[0][0] + offset)
+            lt[1][0] = max(datetime.min, lt[1][0] + offset)
             for i in range(1, len(ut)):
-                lt[0][i] += ti[i - 1][0] // SEC
-                lt[1][i] += ti[i][0] // SEC
+                lt[0][i] += ti[i - 1][0]
+                lt[1][i] += ti[i][0]
         return lt
 
     @classmethod
     def fromdata(cls, types, times, rules=None):
-        ut = array('q', [])
         ti = []
+        ut = []
         for t, i in times:
-            ut.append((t - EPOCH) // SEC)
+            ut.append(t)
             ti.append(types[i])
         self = cls(ut, ti)
         if rules is not None:
@@ -114,33 +114,30 @@ class ZoneInfo(tzinfo):
             raise TypeError("fromutc() requires a datetime argument")
         if dt.tzinfo is not self:
             raise ValueError("dt.tzinfo is not self")
-        if dt.replace(tzinfo=None) > self.posix_after:
+        dt = dt.replace(tzinfo=None)
+        if dt > self.posix_after:
             return self.posix_rules.fromutc(dt)
-        timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400 +
-                     dt.hour * 3600 + dt.minute * 60 + dt.second)
-
-        if timestamp < self.ut[1]:
+        if dt < self.ut[1]:
             tti = self.ti[0]
             fold = 0
         else:
-            idx = bisect.bisect_right(self.ut, timestamp)
-            assert self.ut[idx - 1] <= timestamp
-            assert idx == len(self.ut) or timestamp < self.ut[idx]
+            idx = bisect.bisect_right(self.ut, dt)
+            assert self.ut[idx - 1] <= dt
+            assert idx == len(self.ut) or dt < self.ut[idx]
             tti_prev, tti = self.ti[idx - 2:idx]
             # Detect fold
             shift = tti_prev[0] - tti[0]
-            fold = (shift > timedelta(0, timestamp - self.ut[idx - 1]))
+            fold = (shift > dt - self.ut[idx - 1])
         dt += tti[0]
+        dt = dt.replace(tzinfo=self)
         if fold:
             return enfold(dt)
         else:
             return dt
 
     def _find_ti(self, dt, i):
-        timestamp = ((dt.toordinal() - self.EPOCHORDINAL) * 86400 +
-                     dt.hour * 3600 + dt.minute * 60 + dt.second)
         lt = self.lt[getattr(dt, 'fold', 0)]
-        idx = bisect.bisect_right(lt, timestamp)
+        idx = bisect.bisect_right(lt, dt.replace(tzinfo=None))
 
         return self.ti[max(0, idx - 1)][i]
 
@@ -152,12 +149,7 @@ class ZoneInfo(tzinfo):
     def dst(self, dt):
         if dt.replace(tzinfo=None) > self.posix_after:
             return self.posix_rules.dst(dt)
-        isdst = self._find_ti(dt, 1)
-        # XXX: We cannot accurately determine the "save" value,
-        # so let's return 1h whenever DST is in effect.  Since
-        # we don't use dst() in fromutc(), it is unlikely that
-        # it will be needed for anything more than bool(dst()).
-        return ZERO if isdst else HOUR
+        return self._find_ti(dt, 1)
 
     def tzname(self, dt):
         return self._find_ti(dt, 2)

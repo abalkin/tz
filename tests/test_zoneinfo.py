@@ -2,7 +2,6 @@ import unittest
 import sys
 
 from datetime import timedelta, timezone, datetime
-from array import array
 import pickle
 import pytest
 
@@ -15,7 +14,7 @@ from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time, \
 def tz_shifts(z):
     for (_, prev_info), (time, info) in pairs(zip(z.ut, z.ti)):
         shift = info[0] - prev_info[0]
-        yield datetime.utcfromtimestamp(time), shift
+        yield time, shift
 
 
 def tz_folds(z):
@@ -115,8 +114,8 @@ class ZoneInfoTest(unittest.TestCase):
 
 
 def test_pickle():
-    ut = array('q', [1 - 2**63])
-    ti = [(timedelta(0), False, 'UTC'), ]
+    ut = [datetime.min]
+    ti = [(timedelta(0), timedelta(0), 'UTC'), ]
     z = ZoneInfo(ut, ti)
     s = pickle.dumps(z)
     r = pickle.loads(s)
