@@ -15,6 +15,13 @@ def zoneinfo(tmpdir_factory):
         f.write(ZONE_TAB)
     return tmpdir
 
+
+@pytest.fixture
+def ny_tzfile():
+    data = base64.decodebytes(New_York)
+    return io.BytesIO(data)
+
+
 ZONE_TAB = """\
 US	+404251-0740023	America/New_York	Eastern (most areas)
 """
