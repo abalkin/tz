@@ -39,7 +39,7 @@ def get(tzid):
     z.types = [(timedelta(seconds=utcoffset),
                 timedelta(hours=is_dst), abbr)
                for utcoffset, is_dst, abbr in ns['types']]
-    z.transitions = [(datetime(*time), i)
-                     for time, i in ns['times']]
-    z.posix_string = ns['posix']
+    z.times = [(datetime(*time), i)
+               for time, i in ns['times']]
+    z.rules = ns['posix']
     return z

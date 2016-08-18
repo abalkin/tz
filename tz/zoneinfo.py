@@ -103,6 +103,7 @@ class ZoneInfo(tzinfo):
         self = cls(ut, ti)
         if rules is not None:
             self.posix_rules = PosixRules(rules)
+            self.posix_after = ut[-1]
         return self
 
     EPOCHORDINAL = date(1970, 1, 1).toordinal()

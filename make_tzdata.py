@@ -5,7 +5,10 @@ from datetime import datetime, timedelta
 
 EPOCH = datetime(1970, 1, 1)
 SEC = timedelta(0, 1)
-U1 = (datetime(1, 1, 1) - EPOCH) // SEC
+# The most negative value of a UTC timestamp:
+# use January 2, 0001 to allow for up to 24 hours
+# UTC offset.
+U1 = (datetime(1, 1, 2) - EPOCH) // SEC
 
 
 def list_zones(zoneinfo_dir):
