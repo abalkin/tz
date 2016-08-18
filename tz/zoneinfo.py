@@ -103,7 +103,8 @@ class ZoneInfo(tzinfo):
         self = cls(ut, ti)
         if rules is not None:
             self.posix_rules = PosixRules(rules)
-            self.posix_after = ut[-1]
+            if ut:
+                self.posix_after = ut[-1]
         return self
 
     EPOCHORDINAL = date(1970, 1, 1).toordinal()
@@ -117,7 +118,8 @@ class ZoneInfo(tzinfo):
             raise ValueError("dt.tzinfo is not self")
         dt = dt.replace(tzinfo=None)
         if dt > self.posix_after:
-            return self.posix_rules.fromutc(dt)
+            dt = self.posix_rules.fromutc(dt.replace(tzinfo=self.posix_rules))
+            return dt.replace(tzinfo=self)
         if dt < self.ut[1]:
             tti = self.ti[0]
             fold = 0
