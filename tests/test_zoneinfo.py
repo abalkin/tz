@@ -137,6 +137,7 @@ def test_posix_rules_pickle():
      ('CHAST', timedelta(hours=12, minutes=45), 'CHADT')),
     ('LHST-10:30LHDT-11',
      ('LHST', timedelta(hours=10, minutes=30), 'LHDT-11')),
+    ('<+06>-6', ('+06', timedelta(hours=6), '')),
 ])
 def test_parse_name_offset(data, parsed):
     assert parsed == parse_name_offset(data)

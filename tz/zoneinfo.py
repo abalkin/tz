@@ -159,23 +159,34 @@ class ZoneInfo(tzinfo):
 
 
 def parse_name_offset(data):
-    alpha = True
-    i = len(data)
-    for j, ch in enumerate(data):
-        if alpha:
-            if not ch.isalpha():
-                i = j
-                alpha = False
-        else:
-            if ch.isalpha():
+    if data.startswith('<'):
+        data = data[1:]
+        i = data.find('>')
+        name = data[:i]
+        i += 1
+        for j, ch in enumerate(data[i:], i):
+            if ch.isalpha() or ch == '<':
                 break
+        else:
+            j = len(data)
     else:
-        j = len(data)
-    # At this point i points at the first digit and
-    # j points at the first char of the rest
-    if data[i - 1] in '+-':
-        i -= 1
-    name = data[:i]
+        alpha = True
+        i = len(data)
+        for j, ch in enumerate(data):
+            if alpha:
+                if not ch.isalpha():
+                    i = j
+                    alpha = False
+            else:
+                if ch.isalpha() or ch == '<':
+                    break
+        else:
+            j = len(data)
+        # At this point i points at the first digit and
+        # j points at the first char of the rest
+        if data[i - 1] in '+-':
+            i -= 1
+        name = data[:i]
     offset = -parse_time(data[i:j]) if j > i else None
     rest = data[j:]
     return name, offset, rest
