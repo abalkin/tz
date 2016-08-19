@@ -246,6 +246,32 @@ class PosixRules(tzinfo):
             self.dst_end = parse_mnd_time(r[2])
         return self
 
+    def fromutc(self, dt):
+        if not isinstance(dt, datetime):
+            raise TypeError("fromutc() requires a datetime argument")
+        if dt.tzinfo is not self:
+            raise ValueError("dt.tzinfo is not self")
+        dt = dt.replace(tzinfo=None)
+        # NB: DST start (end) is in standard (DST) time
+        start = self.dst_start(dt.year) - self.offset
+        end = self.dst_end(dt.year) - self.offset - HOUR
+        #         +- start   +- end
+        #         |          | 1h |
+        #  STD    |  DST     |  STD
+        # fold: 0 |     0    | 1  |  0
+        fold = (ZERO <= dt - end < HOUR)
+        if start < end:  # Northern hemisphere
+            if start <= dt < end:
+                dt += self.offset + HOUR
+            else:
+                dt += self.offset
+        else:  # Southern hemisphere (DST straddles the New Year)
+            if end <= dt < start:
+                dt += self.offset
+            else:
+                dt += self.offset + HOUR
+        return enfold(dt.replace(tzinfo=self), fold)
+
     def tzname(self, dt):
         is_dst = bool(self.dst(dt))
         return self.abbrs[is_dst]
