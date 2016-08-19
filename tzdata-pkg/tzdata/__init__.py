@@ -28,6 +28,15 @@ def aliases(area=None):
     return []
 
 
+def delta(x):
+    try:
+        return timedelta(hours=x)
+    except TypeError:
+        kwds = {name: value for name, value in zip(['hours', 'minutes',
+                                                    'seconds'], x)}
+        return timedelta(**kwds)
+
+
 def get(tzid):
     """Return timezone data"""
     ns = {}
@@ -36,9 +45,8 @@ def get(tzid):
         raw_data = f.read()
     exec(raw_data, ns, ns)
     z = ZoneData()
-    z.types = [(timedelta(seconds=utcoffset),
-                timedelta(hours=is_dst), abbr)
-               for utcoffset, is_dst, abbr in ns['types']]
+    z.types = [(delta(offset), delta(save), abbr)
+               for offset, save, abbr in ns['types']]
     z.times = [(datetime(*time), i)
                for time, i in ns['times']]
     z.rules = ns['posix']

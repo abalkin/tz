@@ -41,9 +41,27 @@ def format_timestamp(x):
     return repr(t).replace('datetime.datetime', '')
 
 
+def format_type_info(gmtoff, is_dst, abbr):
+    if gmtoff >= 0:
+        sign = 1
+    else:
+        sign = -1
+        gmtoff = -gmtoff
+    hours, res = divmod(gmtoff, 3600)
+    if res == 0:
+        offset = sign * hours
+    else:
+        offset = sign * hours,
+        minutes, seconds = divmod(res, 60)
+        offset += sign * minutes,
+        if seconds:
+            offset += sign * seconds,
+
+    return "(%r, %d, %r)" % (offset, is_dst, abbr)
+
+
 def format_zone_data(data):
-    types = ',\n    '.join(repr(x).replace('datetime.timedelta', '')
-                           for x in data.type_infos)
+    types = ',\n    '.join(format_type_info(*x) for x in data.type_infos)
     times = ',\n    '.join("(%s, %d)" % (format_timestamp(x), i)
                            for x, i in zip(data.times, data.type_indices))
     return TEMPLATE.format(types, times, data.posix_string)
