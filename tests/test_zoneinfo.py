@@ -8,7 +8,8 @@ import pytest
 import tz
 from tz.tools import pairs
 from tz.zoneinfo import ZoneInfo, enfold, parse_std_dst, parse_mnd_time, \
-    dth_day_of_week_n, PosixRules, HOUR, ZERO, parse_time, julian_day
+    dth_day_of_week_n, PosixRules, ZERO, parse_time, julian_day, \
+    parse_name_offset
 
 
 def tz_shifts(z):
@@ -129,10 +130,26 @@ def test_posix_rules_pickle():
     assert r.tzstr == z.tzstr
 
 
+@pytest.mark.parametrize('data, parsed', [
+    ('EST5EDT', ('EST', timedelta(hours=-5), 'EDT')),
+    ('EST+5EDT+4', ('EST', timedelta(hours=-5), 'EDT+4')),
+    ('CHAST-12:45CHADT',
+     ('CHAST', timedelta(hours=12, minutes=45), 'CHADT')),
+    ('LHST-10:30LHDT-11',
+     ('LHST', timedelta(hours=10, minutes=30), 'LHDT-11')),
+])
+def test_parse_name_offset(data, parsed):
+    assert parsed == parse_name_offset(data)
+
+
 @pytest.mark.parametrize('std_dst, parsed', [
-    ('EST5EDT', (timedelta(hours=-5), ('EST', 'EDT'))),
-    ('CET-1CEST', (timedelta(hours=1), ('CET', 'CEST'))),
-    ('MSK-3', (timedelta(hours=3), ('MSK', ''))),
+    ('EST5EDT', (timedelta(hours=-5), ('EST', 'EDT'), None)),
+    ('CET-1CEST', (timedelta(hours=1), ('CET', 'CEST'), None)),
+    ('MSK-3', (timedelta(hours=3), ('MSK', ''), None)),
+    ('CHAST-12:45CHADT',
+     (timedelta(hours=12, minutes=45), ('CHAST', 'CHADT'), None)),
+    ('LHST-10:30LHDT-11',
+     (timedelta(hours=10, minutes=30), ('LHST', 'LHDT'), timedelta(hours=11))),
 ])
 def test_parse_std_dst(std_dst, parsed):
     assert parsed == parse_std_dst(std_dst)
@@ -183,7 +200,7 @@ def test_julian_day(year, n, month, day):
     # New York
     ('EST5EDT,M3.2.0,M11.1.0', 2016,
      datetime(2016, 3, 13, 2), datetime(2016, 11, 6, 2)),
-    # Sydney, Australia
+    # Sydney, Australia (Southern hemisphere)
     ('AEST-10AEDT,M10.1.0,M4.1.0/3', 2016,
      datetime(2016, 10, 2, 2), datetime(2016, 4, 3, 3)),
     # Exotic: Chatham, Pacific
@@ -191,34 +208,37 @@ def test_julian_day(year, n, month, day):
      datetime(2016, 9, 25, 2, 45), datetime(2016, 4, 3, 3, 45)),
     # Exotic: Tehran, Iran
     ('IRST-3:30IRDT,J80/0,J264/0', 2016,
-     datetime(2016, 3, 21, 0), datetime(2016, 9, 21))
+     datetime(2016, 3, 21, 0), datetime(2016, 9, 21)),
+    # Exotic: Lord Howe, Australia (1/2 hour DST offset)
+    ('LHST-10:30LHDT-11,M10.1.0,M4.1.0', 2016,
+     datetime(2016, 10, 2, 2), datetime(2016, 4, 3, 2))
 ])
 def test_posix_rules_transitions(tz, year, dst_start, dst_end):
     info = PosixRules(tz)
     assert (dst_start, dst_end) == info.transitions(year)
     dst_time = (dst_start + timedelta(1)).replace(tzinfo=info)
-    assert dst_time.dst() == HOUR
+    assert dst_time.dst() == info.dst_save
     std_time = (dst_end + timedelta(1)).replace(tzinfo=info)
     assert std_time.dst() == ZERO
-    # Ambiguous hour: the next hour after DST end.
-    fold_time_0 = (dst_end + HOUR / 2).replace(tzinfo=info)
+    # Ambiguous hour: the next dst_save interval after DST end.
+    fold_time_0 = (dst_end + info.dst_save / 2).replace(tzinfo=info)
     fold_time_1 = enfold(fold_time_0, 1)
-    assert fold_time_0.dst() == HOUR
+    assert fold_time_0.dst() == info.dst_save
     assert fold_time_1.dst() == ZERO
-    # Skipped hour: the next hour after DST start
-    gap_time_0 = (dst_start + HOUR / 2).replace(tzinfo=info)
+    # Skipped hour: the next dst_save interval after DST start
+    gap_time_0 = (dst_start + info.dst_save / 2).replace(tzinfo=info)
     gap_time_1 = enfold(gap_time_0, 1)
     assert gap_time_0.dst() == ZERO
-    assert gap_time_1.dst() == HOUR
-    # Check that DST is an hour ahead of STD
+    assert gap_time_1.dst() == info.dst_save
+    # Check that DST is dst_save ahead of STD
     delta = dst_time.utcoffset() - std_time.utcoffset()
-    assert delta == HOUR
+    assert delta == info.dst_save
     # Check that STD/DST abbreviations are correctly encoded in the TZ string
     std_dst = tz.split(',', 2)[0]
     std = std_time.tzname()
     dst = dst_time.tzname()
     assert std_dst.startswith(std)
-    assert std_dst.endswith(dst)
+    assert dst in std_dst
 
 
 def test_repr():
@@ -233,3 +253,11 @@ def test_far_future():
     far_winter = datetime(9999, 12, 1, tzinfo=z)
     assert far_summer.dst()
     assert not far_winter.dst()
+
+
+def test_lord_howe_rules():
+    lh = PosixRules('LHST-10:30LHDT-11,M10.1.0,M4.1.0')
+    u = datetime(2016, 10, 1, 15, 30, tzinfo=timezone.utc)  # DST start
+    t = u.astimezone(lh)
+    assert t.strftime('%a %b %d %T %Y %Z') == 'Sun Oct 02 02:30:00 2016 LHDT'
+    assert t.dst() == timedelta(minutes=30)

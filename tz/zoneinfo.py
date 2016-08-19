@@ -158,27 +158,36 @@ class ZoneInfo(tzinfo):
         return self._find_ti(dt, 2)
 
 
-def parse_std_dst(std_dst):
-    digit = False
-    i = 0
-    for j, ch in enumerate(std_dst):
-        if digit:
-            if not ch.isdigit():
-                break
-        else:
-            if ch.isdigit():
+def parse_name_offset(data):
+    alpha = True
+    i = len(data)
+    for j, ch in enumerate(data):
+        if alpha:
+            if not ch.isalpha():
                 i = j
-                digit = True
+                alpha = False
+        else:
+            if ch.isalpha():
+                break
     else:
-        j = len(std_dst)
+        j = len(data)
     # At this point i points at the first digit and
-    # j points at the first char of dst
-    if std_dst[i - 1] in '+-':
+    # j points at the first char of the rest
+    if data[i - 1] in '+-':
         i -= 1
-    std = std_dst[:i]
-    offset = parse_time(std_dst[i:j])
-    dst = std_dst[j:]
-    return -offset, (std, dst)
+    name = data[:i]
+    offset = -parse_time(data[i:j]) if j > i else None
+    rest = data[j:]
+    return name, offset, rest
+
+
+def parse_std_dst(std_dst):
+    std, offset, rest = parse_name_offset(std_dst)
+    if rest:
+        dst, dst_offset, _ = parse_name_offset(rest)
+    else:
+        dst, dst_offset = '', None
+    return offset, (std, dst), dst_offset
 
 TIME_COMPONENTS = ['hours', 'minutes', 'seconds']
 
@@ -229,6 +238,7 @@ def julian_day(year, n):
 class PosixRules(tzinfo):
     dst_start = None
     dst_end = None
+    dst_save = HOUR
 
     def __reduce__(self):
         return PosixRules, (self.tzstr, )
@@ -240,7 +250,9 @@ class PosixRules(tzinfo):
         self = _tzinfo.__new__(cls)
         self.tzstr = posix_rules
         r = posix_rules.strip().split(',')
-        self.offset, self.abbrs = parse_std_dst(r[0])
+        self.offset, self.abbrs, dst_offset = parse_std_dst(r[0])
+        if dst_offset is not None:
+            self.dst_save = dst_offset - self.offset
         if len(r) > 2:
             self.dst_start = parse_mnd_time(r[1])
             self.dst_end = parse_mnd_time(r[2])
@@ -254,22 +266,22 @@ class PosixRules(tzinfo):
         dt = dt.replace(tzinfo=None)
         # NB: DST start (end) is in standard (DST) time
         start = self.dst_start(dt.year) - self.offset
-        end = self.dst_end(dt.year) - self.offset - HOUR
+        end = self.dst_end(dt.year) - self.offset - self.dst_save
         #         +- start   +- end
         #         |          | 1h |
         #  STD    |  DST     |  STD
         # fold: 0 |     0    | 1  |  0
-        fold = (ZERO <= dt - end < HOUR)
+        fold = (ZERO <= dt - end < self.dst_save)
         if start < end:  # Northern hemisphere
             if start <= dt < end:
-                dt += self.offset + HOUR
+                dt += self.offset + self.dst_save
             else:
                 dt += self.offset
         else:  # Southern hemisphere (DST straddles the New Year)
             if end <= dt < start:
                 dt += self.offset
             else:
-                dt += self.offset + HOUR
+                dt += self.offset + self.dst_save
         return enfold(dt.replace(tzinfo=self), fold)
 
     def tzname(self, dt):
@@ -287,25 +299,25 @@ class PosixRules(tzinfo):
         # dt first.
         dt = dt.replace(tzinfo=None)
         if start < end:  # Northern hemisphere
-            if start + HOUR <= dt < end:
+            if start + self.dst_save <= dt < end:
                 # DST is in effect.
-                return HOUR
-            if end <= dt < end + HOUR:
+                return self.dst_save
+            if end <= dt < end + self.dst_save:
                 # Fold (an ambiguous hour): use dt.fold to disambiguate.
-                return ZERO if getattr(dt, 'fold', 0) else HOUR
-            if start <= dt < start + HOUR:
+                return ZERO if getattr(dt, 'fold', 0) else self.dst_save
+            if start <= dt < start + self.dst_save:
                 # Gap (a non-existent hour): reverse the fold rule.
-                return HOUR if getattr(dt, 'fold', 0) else ZERO
+                return self.dst_save if getattr(dt, 'fold', 0) else ZERO
         else:  # Southern hemisphere (DST straddles the New Year)
-            if start + HOUR <= dt or dt < end:
+            if start + self.dst_save <= dt or dt < end:
                 # DST is in effect.
-                return HOUR
-            if end <= dt < end + HOUR:
+                return self.dst_save
+            if end <= dt < end + self.dst_save:
                 # Fold (an ambiguous hour): use dt.fold to disambiguate.
-                return ZERO if getattr(dt, 'fold', 0) else HOUR
-            if start <= dt < start + HOUR:
+                return ZERO if getattr(dt, 'fold', 0) else self.dst_save
+            if start <= dt < start + self.dst_save:
                 # Gap (a non-existent hour): reverse the fold rule.
-                return HOUR if getattr(dt, 'fold', 0) else ZERO
+                return self.dst_save if getattr(dt, 'fold', 0) else ZERO
         # DST is off.
         return ZERO
 
