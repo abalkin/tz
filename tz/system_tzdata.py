@@ -75,18 +75,22 @@ def guess_saves(zone, data):
         is_dst1 = bool(data.types[type1][1])
         if (is_dst0, is_dst1) == (False, True):
             shift = data.types[type1][0] - data.types[type0][0]
-            saves.setdefault(type1, set()).add(shift)
-            details[type1, shift] = (time0, time1)
+            if shift:
+                saves.setdefault(type1, set()).add(shift)
+                details[type1, shift] = (time0, time1)
         elif (is_dst0, is_dst1) == (True, False):
-            shift = data.types[type1][0] - data.types[type0][0]
-            saves.setdefault(type1, set()).add(shift)
-            details[type1, shift] = (time0, time1)
+            shift = data.types[type0][0] - data.types[type1][0]
+            if shift:
+                saves.setdefault(type0, set()).add(shift)
+                details[type0, shift] = (time0, time1)
 
     types = data.types[:]
     for i, (offset, save, abbr) in enumerate(data.types):
         if save:
             guesses = saves.get(i, set())
             if not guesses:
+                print("No save value guesses for type %d (%r) in zone %s." %
+                      (i, types[i][-1], zone))
                 guess = timedelta(hours=1)
             elif len(guesses) == 1:
                 guess = guesses.pop()
