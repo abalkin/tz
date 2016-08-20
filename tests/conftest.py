@@ -6,9 +6,10 @@ import io
 @pytest.fixture(scope='session')
 def zoneinfo(tmpdir_factory):
     """A fake zoneinfo tree."""
-    infile = io.BytesIO(New_York)
     tmpdir = tmpdir_factory.mktemp('zoneinfo')
-    for zone in ['America/New_York', 'Australia/Lord_Howe']:
+    for zone, data in [('America/New_York', New_York),
+                       ('Australia/Lord_Howe', Lord_Howe)]:
+        infile = io.BytesIO(data)
         outpath = tmpdir.ensure(zone)
         with outpath.open('bw') as outfile:
             base64.decode(infile, outfile)
