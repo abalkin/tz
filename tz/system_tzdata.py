@@ -112,7 +112,7 @@ def get(zone):
     data = ZoneData()
     data.types = [
         (timedelta(seconds=gmtoff),
-         timedelta(hours=is_std),  # TODO: Detect non-hour DST shifts.
+         timedelta(hours=is_std),
          abbr) for gmtoff, is_std, abbr in raw_data.type_infos]
     data.times = [
         (UNIX_EPOCH + timedelta(seconds=max(CREATION, t)), i)
