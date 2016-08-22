@@ -8,7 +8,7 @@ from .tzfile import is_tzfile
 
 __all__ = ['zones', 'aliases', 'get']
 
-zoneinfo_dir = '/usr/share/zoneinfo'
+zoneinfo_dir = os.getenv('TZDIR', '/usr/share/zoneinfo')
 
 _zones = []
 _aliases = {}
@@ -63,7 +63,7 @@ def aliases(area=None):
 
 SECOND = timedelta(0, 1)
 UNIX_EPOCH = datetime(1970, 1, 1)
-CREATION = (datetime(1, 1, 1) - UNIX_EPOCH) // SECOND
+CREATION = (datetime(1, 1, 2) - UNIX_EPOCH) // SECOND
 
 
 def guess_saves(zone, data):
