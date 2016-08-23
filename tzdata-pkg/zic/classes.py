@@ -1,4 +1,3 @@
-from collections import namedtuple
 from datetime import date, timedelta, timezone, datetime, tzinfo, time
 
 UTC = timezone.utc
@@ -130,8 +129,27 @@ class Rule:
             yield trans
             prev_tz = FixedOffset(*trans[1:])
 
-Observance = namedtuple('Observance', 'gmtoff rules format until')
+TIME_ARGS = 'hours', 'minutes', 'seconds'
 
+
+def wall(dt):
+    return dt.astimezone(timezone.utc)
+
+def utc(dt):
+    return dt.replace(tzinfo=timezone.utc)
+
+def std(dt):
+    return dt.astimezone(timezone.utc) - dt.dst()
+
+class Observance:
+    def __init__(self, gmtoff, rules, format, until):
+        if isinstance(gmtoff, int):
+            gmtoff = [gmtoff]
+        kwds = dict(zip(TIME_ARGS, gmtoff))
+        self.gmtoff = timedelta(**kwds)
+        self.rules = rules
+        self.format = format
+        self.until = until
 
 class Zone:
     pass

@@ -1,8 +1,9 @@
+import os
 import textwrap
 
 import sys
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 HEADER = """\
 from zic.classes import *
@@ -10,7 +11,7 @@ from datetime import *
 
 
 """
-
+PKG_DIR = os.path.dirname(__file__)
 RAW_FILES = [
     'africa', 'antarctica', 'asia', 'australasia',
     'europe', 'northamerica', 'southamerica'
@@ -71,7 +72,7 @@ def compile_stream(input, output, header=HEADER):
             rules.setdefault(fields[1], []).append(fields[2:])
         if state == 'Zone':
             gmtoff, zone_rules, format = fields[:3]
-            until = format_until(fields[3:])
+            until = format_until(*fields[3:])
             if until is None:
                 state = None
 
@@ -111,7 +112,6 @@ TIME_TYPES = {
     's': 'std',
 }
 
-
 def format_time(t):
     if t == '-':
         return 'timedelta(0)'
@@ -149,23 +149,40 @@ def print_rules(rules, file):
 TIME_UNITS = 'hours', 'minutes', 'seconds'
 
 
-def format_until(until):
-    n = len(until)
-    if n == 0:
+def time_parts(time):
+    parts = time.split(':')
+    ch = parts[-1][-1]
+    if ch in TIME_TYPES:
+        parts[-1] = parts[-1][:-1]
+    parts = [p.lstrip('0') or '0' for p in parts]
+    parts.append(TIME_TYPES.get(ch, 'wall'))
+    return parts
+
+
+def format_until(year=None, month=None, day=None, time=None):
+    if year is None:
         return None
-    if n == 1:
-        return int(until[0])
-    return '(%s)' % ', '.join(repr(u) for u in until)
+    if month is None:
+        return year
+    until = [year, month.lstrip('0')]
+    if day:
+        until.append(day.lstrip('0'))
+    if time:
+        until.extend(time_parts(time))
+    return '(%s)' % ', '.join(until)
 
 
 def format_delta(delta):
-    sign = ''
+    sign = 1
     if delta.startswith('-'):
-        sign = '-'
+        sign = -1
         delta = delta[1:]
-    args = ['%s=%s' % (unit, int(value))
-            for unit, value in zip(TIME_UNITS, delta.split(':'))]
-    return '%stimedelta(%s)' % (sign, ', '.join(args))
+    parts = [sign*int(p) for p in delta.split(':')]
+    while len(parts) > 1 and parts[-1] == 0:
+        del parts[-1]
+    if len(parts) == 1:
+        return repr(parts[0])
+    return repr(tuple(parts))
 
 
 def format_observance(gmtoff, rules, format, until):
@@ -193,7 +210,7 @@ def print_zones(zones, file, indent=0):
             file.write(prefix + '    observances = [\n')
             for observance in observances:
                 file.write(textwrap.indent(observance, prefix + 8 * ' '))
-            file.write(prefix + '%s]\n' % (4 * ' '))
+            file.write(prefix + '%s]\n\n' % (4 * ' '))
 
 
 def rules_name(name):
@@ -203,10 +220,12 @@ zone_name = rules_name
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: zic infile [outfile]")
+        print("Usage: zic [--all | infile [outfile]]")
         sys.exit(1)
     if sys.argv[1] == '--all':
         for f in RAW_FILES:
-            compile('raw/' + f, f + '.py')
+            raw_file = os.path.join('raw', f)
+            out_file = os.path.join(PKG_DIR, f + '.py')
+            compile(raw_file, out_file)
     else:
         compile(*sys.argv[1:])
