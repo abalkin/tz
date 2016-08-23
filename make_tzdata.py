@@ -129,6 +129,10 @@ def guess_saves(zone, data):
             if not guesses:
                 print("No save value guesses for type %d (%r) in zone %s." %
                       (i, type_infos[i][-1], zone))
+                print("Used at")
+                for t, ti in zip(data.times, data.type_indices):
+                    if ti == i:
+                        print("   ", T(t))
                 guess = 3600
             elif len(guesses) == 1:
                 guess = guesses.pop()
