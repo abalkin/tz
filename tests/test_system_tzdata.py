@@ -28,7 +28,7 @@ def test_system_tzdata_get(fake_system):
         (-timedelta(0, 14400), timedelta(0, 3600), 'EPT'),
     ]
     assert z.times[:3] == [
-        (datetime(1, 1, 1, 0, 0), 0),
+        (datetime(1, 1, 2, 0, 0), 0),
         (datetime(1883, 11, 18, 17, 0), 2),
         (datetime(1918, 3, 31, 7, 0), 1),
     ]
@@ -48,7 +48,7 @@ def test_system_tzdata_get(fake_system):
         (timedelta(0, 39600), timedelta(0, 1800), 'LHDT'),
     ]
     assert z.times[:3] == [
-        (datetime(1, 1, 1, 0, 0), 0),
+        (datetime(1, 1, 2, 0, 0), 0),
         (datetime(1895, 1, 31, 13, 23, 40), 1),
         (datetime(1981, 2, 28, 14, 0), 3),
     ]
