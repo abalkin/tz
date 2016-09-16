@@ -12,12 +12,18 @@ if isfile("MANIFEST"):
 
 TOPDIR = os.path.dirname(__file__) or "."
 TZVERSION = '0a'
-with open(TOPDIR + '/raw/Makefile') as f:
-    for line in f:
-        m = re.search('VERSION=\s*([^\s]+)', line)
-        if m:
-            TZVERSION = m.group(1)
-            break
+try:
+    version_file = open(TOPDIR + '/raw/version')
+except OSError:
+    with open(TOPDIR + '/raw/Makefile') as f:
+        for line in f:
+            m = re.search('VERSION=\s*([^\s]+)', line)
+            if m:
+                TZVERSION = m.group(1)
+                break
+else:
+    with version_file:
+        TZVERSION = version_file.read().strip()
 VERSION = "1.%s.%d" % (TZVERSION[:-1], ord(TZVERSION[-1]) - ord('a'))
 with open(TOPDIR + '/tzdata/zones') as f:
     ZONES = [line.strip() for line in f]
